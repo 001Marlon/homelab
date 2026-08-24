@@ -103,11 +103,12 @@ Terraform verwendet Umgebungsvariablen für die Zugangsdaten zu Proxmox.
 
 ```bash
 export TF_VAR_proxmox_endpoint="https://192.168.178.200:8006/"
-export TF_VAR_proxmox_api_token="terraform@pve!terraform=DEIN_TOKEN"
+export TF_VAR_proxmox_api_token="terraform@pve!terraform=DEIN_PROXMOX_TOKEN"
 export TF_VAR_ssh_public_key="DEIN_SSH_PUBLIC_KEY"
 ```
 
-`DEIN_TOKEN` durch den zuvor erstellten Proxmox-API-Token ersetzen.
+`DEIN_PROXMOX_TOKEN` durch den zuvor erstellten Proxmox-API-Token ersetzen.
+
 `DEIN_SSH_PUBLIC_KEY` durch deinen öffentlichen SSH-Key ersetzen.
 
 ### 5.2 In das Proxmox-Terraform-Verzeichnis wechseln
@@ -160,49 +161,3 @@ yes
 ```
 
 bestätigen.
-
----
-
-## Wiederherstellungsablauf im Überblick
-
-```text
-┌─────────────────────────────┐
-│ 1. Proxmox installieren     │
-│    Auto-Installer           │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ 2. Terraform API-Zugang     │
-│    User + Role + Token       │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ 3. Git Repository klonen     │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ 4. Terraform installieren   │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ 5. Terraform konfigurieren  │
-│    Variablen + init         │
-└──────────────┬──────────────┘
-               │
-               ▼
-┌─────────────────────────────┐
-│ 6. terraform plan            │
-│    ↓                         │
-│    terraform apply           │
-└─────────────────────────────┘
-```
-
-## Aktueller Stand
-
-Nach Schritt 6 sollte Terraform die grundlegende Proxmox-Infrastruktur wiederherstellen, insbesondere die im Terraform-Code definierten VMs und Ressourcen.
-
-Weitere Konfigurationen wie Debian, Docker, Docker-Compose-Stacks und Anwendungen werden anschließend über die dafür vorgesehenen Terraform-/Ansible-Konfigurationen des Repositories wiederhergestellt.
