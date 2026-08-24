@@ -1,0 +1,20 @@
+[global]
+keyboard = "de"
+country = "de"
+fqdn = "homelab-pve01.homelab.local"
+mailto = "mail@exmaple.com" # Put you mail address here, which will be used to inform you about critical happenings
+timezone = "Europe/Berlin"
+root-password = "your_secure_password" # Put a secure password for the proxmox "root" user here
+root-ssh-keys = ["ssh-ed25519 AAAAC3N..."] # Put your ssh-keys, which should be able to access the proxmox host via ssh 
+reboot-mode = "reboot"
+
+[network]
+source = "from-answer"
+cidr = "192.168.178.200/24"
+gateway = "192.168.178.1"
+dns = "192.168.178.1"
+filter.ID_NET_NAME_MAC = "xxxxxxxxxx" # Put the mac address of your network interface
+
+[disk-setup]
+filesystem = "ext4"
+filter.ID_SERIAL_SHORT = "xxxxxxxxxxxxxx" # Put the serial number of your disk, which should be used for the proxmox installation
