@@ -1,0 +1,30 @@
+# ---General---
+
+ssh_public_key = "ssh-ed25519 AAAAC3N..." # Put your Public SSH Key here
+proxmox_node_name = "homelab-pve01"
+default_gateway = "192.168.178.1"
+default_dns_server = "192.168.178.1"
+
+# --- Proxmox ---
+
+proxmox_endpoint = "https://192.168.178.200:8006/"
+proxmox_username = "root@pam"
+proxmox_password = "YOUR_SECURE_PASSWORD" # Put your Proxmox Password Token here
+
+# --- TrueNAS Scale VM ---
+
+truenas_vm_id = 101
+truenas_vm_name = "homelab-truenas01"
+truenas_vm_ip = "192.168.178.201/24"
+truenas_iso_url = "https://download.sys.truenas.net/TrueNAS-SCALE-Goldeye/25.10.6/TrueNAS-SCALE-25.10.6.iso"
+truenas_hdd_ids = [
+  "/dev/disk/by-id/ata-ST4000VN006-3CW104_WW67D4WN",
+  "/dev/disk/by-id/ata-ST4000VN006-3CW104_WW67DHJV"
+]
+
+# --- Debian VM ---
+
+debian_vm_id = 102
+debian_vm_name = "homelab-debian01"
+debian_vm_ip = "192.168.178.202/24"
+debian_cloud_image_url = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"

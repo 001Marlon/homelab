@@ -23,43 +23,15 @@ Diese Anleitung beschreibt die grundlegenden Schritte, um das Homelab nach einem
 
 ---
 
-## 2. Proxmox API-Zugang für Terraform erstellen
-
-Nach der Proxmox-Installation wird ein eigener Benutzer für Terraform angelegt.
-
-### 2.1 Terraform-Benutzer und Rolle erstellen
-
-Auf dem Proxmox-Host als `root` ausführen:
-
-```bash
-pveum user add terraform@pve
-
-pveum role add TerraformRole -privs "Datastore.AllocateSpace,Datastore.Allocate,Datastore.Audit,Datastore.AllocateTemplate,Pool.Allocate,Sys.Audit,Sys.Console,Sys.Modify,Sys.AccessNetwork,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Migrate,VM.PowerMgmt,VM.Snapshot,SDN.Use"
-
-pveum acl modify / -user terraform@pve -role TerraformRole
-```
-
-### 2.2 API-Token erstellen
-
-Den Terraform-API-Token ohne Privilege Separation erstellen:
-
-```bash
-pveum user token add terraform@pve terraform --privsep 0
-```
-
-> **Wichtig:** Den ausgegebenen Token direkt sicher zwischenspeichern. Der Secret-Wert wird später für Terraform benötigt.
-
----
-
-## 3. Homelab Repository lokal klonen
+## 2. Homelab Repository lokal klonen
 
 Das Repository enthält den Terraform-Code sowie die restliche Homelab-Konfiguration.
 
-### 3.1 WSL bzw. Linux-Terminal öffnen
+### 2.1 WSL bzw. Linux-Terminal öffnen
 
 Unter Windows kann dafür WSL verwendet werden.
 
-### 3.2 Repository klonen
+### 2.2 Repository klonen
 
 ```bash
 git clone git@github.com:001Marlon/homelab.git
@@ -73,7 +45,7 @@ cd homelab
 
 ---
 
-## 4. Terraform installieren
+## 3. Terraform installieren
 
 Zuerst prüfen, ob Terraform bereits installiert ist:
 
@@ -95,29 +67,35 @@ terraform --version
 
 ---
 
-## 5. Terraform konfigurieren
+## 4. Terraform konfigurieren
 
-Terraform verwendet Umgebungsvariablen für die Zugangsdaten zu Proxmox.
+> **Hinweis:** Ein separater `terraform@pve`-Benutzer mit eigener Rolle und API-Token wird nicht mehr benötigt. Der Provider authentifiziert sich direkt als `root@pam` (Benutzername + Passwort), da die TrueNAS-VM per Disk-Passthrough auf die physischen HDDs zugreift – und das erlaubt Proxmox ausschließlich einer echten `root@pam`-Session, nicht mal einem API-Token mit vollen Rechten. `root@pam` existiert bereits automatisch nach der Proxmox-Installation, es ist also kein zusätzlicher Setup-Schritt auf dem Proxmox-Host nötig.
 
-### 5.1 Proxmox-Variablen setzen
+### 4.1 tfvars-Datei anlegen
+
+Terraform verwendet eine `.tfvars`-Datei für alle Zugangsdaten und Konfigurationswerte. Da `homelab.tfvars` sensible Daten (u. a. das Proxmox-Root-Passwort) enthält, liegt sie nicht im Repository – stattdessen gibt es dort nur eine Vorlage.
+
+Im Terraform-Verzeichnis eine Kopie der Vorlage erstellen:
 
 ```bash
-export TF_VAR_proxmox_endpoint="https://192.168.178.200:8006/"
-export TF_VAR_proxmox_api_token="terraform@pve!terraform=DEIN_PROXMOX_TOKEN"
-export TF_VAR_ssh_public_key="DEIN_SSH_PUBLIC_KEY"
+cp homelab.tfvars.example homelab.tfvars
 ```
 
-`DEIN_PROXMOX_TOKEN` durch den zuvor erstellten Proxmox-API-Token ersetzen.
+Anschließend `homelab.tfvars` öffnen und die nötigen Werte anpassen, u. a.:
 
-`DEIN_SSH_PUBLIC_KEY` durch deinen öffentlichen SSH-Key ersetzen.
+- `ssh_public_key` – eigener öffentlicher SSH-Key
+- Proxmox-Zugangsdaten (`proxmox_endpoint`, `proxmox_username`, `proxmox_password`)
+- ggf. weitere umgebungsspezifische Werte (VM-IDs, IPs, HDD-IDs etc.)
 
-### 5.2 In das Proxmox-Terraform-Verzeichnis wechseln
+> **Wichtig:** `homelab.tfvars` niemals ins Git-Repo committen – sie enthält das Proxmox-Root-Passwort.
+
+### 4.2 In das Proxmox-Terraform-Verzeichnis wechseln
 
 ```bash
 cd infrastructure/proxmox/terraform
 ```
 
-### 5.3 Terraform initialisieren
+### 4.3 Terraform initialisieren
 
 ```bash
 terraform init
@@ -127,24 +105,26 @@ Dadurch werden unter anderem die benötigten Terraform-Provider heruntergeladen.
 
 ---
 
-## 6. Infrastruktur mit Terraform erstellen
+## 5. Infrastruktur mit Terraform erstellen
 
-### 6.1 Terraform Plan erstellen
+Ab hier muss die `.tfvars`-Datei bei **jedem** Terraform-Befehl über `-var-file` mitgegeben werden.
+
+### 5.1 Terraform Plan erstellen
 
 Zunächst prüfen, welche Änderungen Terraform durchführen würde:
 
 ```bash
-terraform plan
+terraform plan -var-file="homelab.tfvars"
 ```
 
 Den Plan kontrollieren.
 
-### 6.2 Infrastruktur erstellen
+### 5.2 Infrastruktur erstellen
 
 Wenn der Plan korrekt aussieht:
 
 ```bash
-terraform apply
+terraform apply -var-file="homelab.tfvars"
 ```
 
 Terraform fragt anschließend nach einer Bestätigung:

@@ -1,8 +1,13 @@
 resource "proxmox_download_file" "debian_cloud_image" {
   content_type = "import"
-
   datastore_id = "local"
-  node_name    = "homelab-pve01"
+  node_name    = var.proxmox_node_name
+  url = var.debian_cloud_image_url
+}
 
-  url = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+resource "proxmox_download_file" "truenas_iso" {
+  content_type = "iso"
+  datastore_id = "local"
+  node_name    = var.proxmox_node_name
+  url = var.truenas_iso_url
 }
