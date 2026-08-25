@@ -17,27 +17,24 @@ resource "proxmox_virtual_environment_vm" "truenas" {
   }
 
   memory {
-    dedicated = 4048
+    dedicated = 8096
   }
 
   disk {
     datastore_id = "local-lvm"
     interface    = "scsi0"
     size         = 32
-    iothread     = true
   }
 
   disk {
     datastore_id    = ""
     path_in_datastore = var.truenas_hdd_ids[0]
-    file_format     = "raw"
     interface       = "scsi1"
   }
 
   disk {
     datastore_id    = ""
     path_in_datastore = var.truenas_hdd_ids[1]
-    file_format     = "raw"
     interface       = "scsi2"
   }
 

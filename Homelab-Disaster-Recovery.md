@@ -69,8 +69,6 @@ terraform --version
 
 ## 4. Terraform konfigurieren
 
-> **Hinweis:** Ein separater `terraform@pve`-Benutzer mit eigener Rolle und API-Token wird nicht mehr benötigt. Der Provider authentifiziert sich direkt als `root@pam` (Benutzername + Passwort), da die TrueNAS-VM per Disk-Passthrough auf die physischen HDDs zugreift – und das erlaubt Proxmox ausschließlich einer echten `root@pam`-Session, nicht mal einem API-Token mit vollen Rechten. `root@pam` existiert bereits automatisch nach der Proxmox-Installation, es ist also kein zusätzlicher Setup-Schritt auf dem Proxmox-Host nötig.
-
 ### 4.1 tfvars-Datei anlegen
 
 Terraform verwendet eine `.tfvars`-Datei für alle Zugangsdaten und Konfigurationswerte. Da `homelab.tfvars` sensible Daten (u. a. das Proxmox-Root-Passwort) enthält, liegt sie nicht im Repository – stattdessen gibt es dort nur eine Vorlage.
@@ -86,8 +84,6 @@ Anschließend `homelab.tfvars` öffnen und die nötigen Werte anpassen, u. a.:
 - `ssh_public_key` – eigener öffentlicher SSH-Key
 - Proxmox-Zugangsdaten (`proxmox_endpoint`, `proxmox_username`, `proxmox_password`)
 - ggf. weitere umgebungsspezifische Werte (VM-IDs, IPs, HDD-IDs etc.)
-
-> **Wichtig:** `homelab.tfvars` niemals ins Git-Repo committen – sie enthält das Proxmox-Root-Passwort.
 
 ### 4.2 In das Proxmox-Terraform-Verzeichnis wechseln
 
