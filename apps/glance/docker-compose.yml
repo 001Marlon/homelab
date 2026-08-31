@@ -1,0 +1,14 @@
+services:
+  glance:
+    image: glanceapp/glance
+    container_name: glance
+    env_file:
+      - .env
+    volumes:
+      - ./config:/app/config
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - 8000:8080
+    restart: unless-stopped
+networks: {}

@@ -1,3 +1,7 @@
+# General
+.env
+.env.*
+
 # Terraform
 .terraform/
 *.tfstate
@@ -17,3 +21,11 @@ terraform.rc
 
 # Proxmox Auto Installer
 answer.toml
+
+# Ansible
+*.retry
+.vault_pass
+vault_pass.txt
+*.vault_pass
+.ansible/
+*.log

@@ -1,0 +1,166 @@
+- type: monitor
+  hide-header: true
+  cache: 5m
+  sites:
+    - title: Immich
+      url: ${IMMICH_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/immich.png
+      
+- type: custom-api
+  title: Immich
+  hide-header: true
+  cache: 60m
+  template: |
+    {{ $stats := newRequest "${IMMICH_URL}/api/server/statistics" | withHeader "X-NetBird-Bypass-Token" "${NETBIRD_BEARER_TOKEN}" | withHeader "x-api-key" "${IMMICH_API_KEY}" | withHeader "Accept" "application/json" | getResponse }}
+    
+    <div style="display: flex; justify-content: space-between; text-align: center; gap: 0.7rem;">
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+        <div style="color: var(--ctp-yellow, #e5c890); font-size: 2.2rem; font-weight: bold;">{{ $stats.JSON.Int "photos" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">PHOTOS</div>
+      </div>
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+        <div style="color: var(--ctp-mauve, #ca9ee6); font-size: 2.2rem; font-weight: bold;">{{ $stats.JSON.Int "videos" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">VIDEOS</div>
+      </div>
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+        <div style="color: var(--ctp-peach, #ef9f76); font-size: 2.2rem; font-weight: bold;">{{ div ($stats.JSON.Int "usage" | toFloat) 1073741824 | toInt | formatNumber }}GB</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">STORAGE</div>
+      </div>
+    </div>
+
+- type: monitor
+  hide-header: true
+  cache: 5m
+  sites:
+    - title: Paperless NGX
+      url: https://${PAPERLESS_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/paperless-ngx.png
+
+- type: custom-api
+  title: Paperless
+  hide-header: true
+  url: https://${PAPERLESS_URL}/api/statistics/
+  headers:
+    Authorization: Token ${PAPERLESS_KEY}
+    X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+    Accept: application/json
+
+  cache: 60m
+  template: |    
+    <div style="display: flex; justify-content: space-between; gap: 0.7rem;">
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+        <div style="color: var(--ctp-green, #a6d189); font-size: 2.2rem; font-weight: bold;">{{ .JSON.Int "documents_total" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">DOCUMENTS</div>
+      </div>
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+        <div style="color: var(--ctp-peach, #ef9f76); font-size: 2.2rem; font-weight: bold;">{{ .JSON.Int "character_count" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">CHARACTERS</div>
+      </div>
+    </div>
+    
+- type: monitor
+  hide-header: true
+  cache: 5m
+  sites:
+    - title: Jellyfin
+      url: ${JELLYFIN_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/jellyfin.png
+      
+- type: custom-api
+  title: Jellyfin
+  hide-header: true
+  cache: 60m
+  url: ${JELLYFIN_URL}/emby/Items/Counts
+  headers:
+    X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+    X-Emby-Token: ${JELLYFIN_API_KEY}
+    Accept: application/json
+
+  template: |
+   
+    <div style="display: flex; justify-content: space-between; gap: 0.7rem;">
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; text-align: center; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+        <div style="color: var(--ctp-blue, #8caaee); font-size: 2.2rem; font-weight: bold;">{{ .JSON.Int "MovieCount" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">MOVIES</div>
+      </div>
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; text-align: center; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+        <div style="color: var(--ctp-mauve, #ca9ee6); font-size: 2.2rem; font-weight: bold;">{{ .JSON.Int "SeriesCount" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">SHOWS</div>
+      </div>
+      <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; text-align: center; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3);">
+      <div style="color: var(--ctp-peach, #ef9f76); font-size: 2.2rem; font-weight: bold;">{{ .JSON.Int "EpisodeCount" | formatNumber }}</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">EPISODES</div>
+      </div>
+    </div>
+
+- type: monitor
+  hide-header: true
+  cache: 5m
+  sites:
+    - title: Vikunja
+      url: ${VIKUNJA_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/vikunja.png
+
+- type: custom-api
+  title: Vikunja
+  hide-header: true
+  cache: 5m
+  template: |
+    {{ $all := newRequest "${VIKUNJA_URL}/api/v1/tasks?page=1&per_page=1000" | withHeader "X-NetBird-Bypass-Token" "${NETBIRD_BEARER_TOKEN}" | withHeader "Authorization" "Bearer ${VIKUNJA_API_TOKEN}" | withHeader "Accept" "application/json" | getResponse }}
+    {{ $open := newRequest "${VIKUNJA_URL}/api/v1/tasks?page=1&per_page=1000&filter=done%20%3D%20false" | withHeader "X-NetBird-Bypass-Token" "${NETBIRD_BEARER_TOKEN}" | withHeader "Authorization" "Bearer ${VIKUNJA_API_TOKEN}" | withHeader "Accept" "application/json" | getResponse }}
+    {{ $done := newRequest "${VIKUNJA_URL}/api/v1/tasks?page=1&per_page=1000&filter=done%20%3D%20true" | withHeader "X-NetBird-Bypass-Token" "${NETBIRD_BEARER_TOKEN}" | withHeader "Authorization" "Bearer ${VIKUNJA_API_TOKEN}" | withHeader "Accept" "application/json" | getResponse }}
+
+    {{ $allItems := $all.JSON.Array "" }}
+    {{ $openItems := $open.JSON.Array "" }}
+    {{ $doneItems := $done.JSON.Array "" }}
+
+    {{ if or (eq (len $allItems) 0) (eq (len $openItems) 0) (eq (len $doneItems) 0) }}
+      {{ $allCode := $all.String "code" }}
+      {{ $openCode := $open.String "code" }}
+      {{ $doneCode := $done.String "code" }}
+      {{ if or $allCode $openCode $doneCode }}
+        <div style="background: var(--ctp-mantle, #292c3c); padding: 18px; border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+          <div style="color: var(--ctp-red, #e78284); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Vikunja API Fehler</div>
+          <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.9rem;">Token oder Endpoint pruefen.</div>
+        </div>
+      {{ else }}
+
+        <div style="display: flex; justify-content: space-between; gap: 0.7rem;">
+          <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+            <div style="color: var(--ctp-yellow, #e5c890); font-size: 2.2rem; font-weight: bold;">{{ len $openItems | formatNumber }}</div>
+            <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">OFFEN</div>
+          </div>
+          <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+            <div style="color: var(--ctp-green, #a6d189); font-size: 2.2rem; font-weight: bold;">{{ len $doneItems | formatNumber }}</div>
+            <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">ERLEDIGT</div>
+          </div>
+          <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+            <div style="color: var(--ctp-blue, #8caaee); font-size: 2.2rem; font-weight: bold;">{{ len $allItems | formatNumber }}</div>
+            <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">GESAMT</div>
+          </div>
+        </div>
+      {{ end }}
+    {{ else }}
+      <div style="display: flex; justify-content: space-between; gap: 0.7rem;">
+        <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+          <div style="color: var(--ctp-yellow, #e5c890); font-size: 2.2rem; font-weight: bold;">{{ len $openItems | formatNumber }}</div>
+          <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">OFFEN</div>
+        </div>
+        <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+          <div style="color: var(--ctp-green, #a6d189); font-size: 2.2rem; font-weight: bold;">{{ len $doneItems | formatNumber }}</div>
+          <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">ERLEDIGT</div>
+        </div>
+        <div style="flex: 1; padding: 0.7rem; background: var(--ctp-mantle, #292c3c); border-radius: 16px; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); text-align: center;">
+          <div style="color: var(--ctp-blue, #8caaee); font-size: 2.2rem; font-weight: bold;">{{ len $allItems | formatNumber }}</div>
+          <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-top: 0.4rem;">GESAMT</div>
+        </div>
+      </div>
+    {{ end }}

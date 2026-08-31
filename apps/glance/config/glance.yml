@@ -1,0 +1,35 @@
+language: german
+
+branding:
+  logo-url: https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/debian.png
+  logo-text: "Dashboard"
+  hide-foot: true
+  app-name: "Dashboard"
+  icon: https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/debian.png
+  app-icon-url: https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/debian.png
+
+theme:
+  background-color: 229 19 23      # Base: hsl(229deg, 19%, 23%)
+  primary-color: 222 74 74         # Blue: hsl(222deg, 74%, 74%)
+  positive-color: 96 44 68         # Green: hsl(96deg, 44%, 68%)
+  negative-color: 359 68 71        # Red: hsl(359deg, 68%, 71%)
+  contrast-multiplier: 1.2
+  text-saturation-multiplier: 1.0
+  custom-css-file: /app/config/user.css
+
+pages:
+  - name: Homeserver
+    columns:
+
+      - size: small
+        widgets:
+          $include: übersicht1.yml
+    
+      - size: full
+        widgets:
+          $include: stats1.yml
+          $include: dienste.yml
+      
+      - size: small
+        widgets:
+          $include: übersicht2.yml

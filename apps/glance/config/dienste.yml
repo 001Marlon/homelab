@@ -1,0 +1,55 @@
+- type: monitor
+  cache: 5m
+  title: Dienste
+  hide-header: true
+  sites:
+    - title: Vaultwarden
+      url: ${VAULTWARDEN_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/vaultwarden-light.png
+    - title: Immich
+      url: ${IMMICH_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/immich.png
+    - title: Paperless NGX
+      url: ${PAPERLESS_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/paperless-ngx.png
+    - title: Jellyfin
+      url: ${JELLYFIN_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/jellyfin.png
+
+- type: monitor
+  cache: 5m
+  title: Server
+  hide-header: true
+  sites:
+    - title: Beszel
+      url: ${BESZEL_URL}
+      check-url: ${BESZEL_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/beszel.png
+    - title: Uptime Kuma
+      url: ${UPTIME_KUMA_URL}
+      check-url: ${UPTIME_KUMA_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/uptime-kuma.png
+    - title: Portainer
+      url: ${PORTAINER_URL}
+      check-url: ${PORTAINER_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/portainer.png
+    - title: MKDocs
+      url: ${MKDOCS_URL}
+      check-url: ${MKDOCS_URL}
+      headers:
+        X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+      icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/mkdocs.png

@@ -1,0 +1,96 @@
+- type: custom-api
+  title: Homelab Header
+  hide-header: true
+  cache: 1d
+  template: |
+    <div style="background: var(--ctp-mantle, #292c3c); border-radius: 16px; padding: 1rem 2rem; display: flex; align-items: center; justify-content: center; gap: 2rem; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); border: 1px solid var(--ctp-surface0, #414559); border-left: 4px solid #a6d189;">
+      <img src="https://cdn.jsdelivr.net/gh/selfhst/icons@main/png/netbird.png" width="56" height="56" style="filter: brightness(0.8) saturate(120%);">
+      <span style="color: var(--ctp-text, #c6d0f5); font-size: 2.2rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin: 0 1rem;">Homelab Status</span>
+      <img src="https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/docker.png" width="70" height="56" style="filter: brightness(0.8) saturate(120%);">
+    </div>
+
+- type: custom-api
+  title: Beszel Metrics
+  hide-header: true
+  url: ${BESZEL_URL}/api/collections/systems/records?filter=name%3D%22Proxmox%20-%20Homelab%22
+  method: GET
+  headers:
+    Authorization: Bearer ${BESZEL_API_KEY}
+    X-NetBird-Bypass-Token: ${NETBIRD_BEARER_TOKEN}
+    Accept: application/json
+  template: |
+    {{ $items := .JSON.Array "items" }}
+
+    {{ if eq (len $items) 0 }}
+      <div style="background: var(--ctp-mantle, #292c3c); padding: 18px; border-radius: 16px; margin: 0; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); font-family: sans-serif;">
+        <div style="color: var(--ctp-red, #e78284); font-size: 1rem; font-weight: 700; margin-bottom: 8px;">Keine Beszel-Daten empfangen</div>
+        <div style="color: var(--ctp-subtext0, #a5adce); font-size: 0.9rem;">
+          Pruefe BESZEL_URL/BESZEL_API_KEY sowie NetBird-Bypass Header.
+        </div>
+      </div>
+    {{ end }}
+
+    {{ range $items }}
+      {{ $info := .Get "info" }}
+      {{ $name := .String "name" }}
+      
+      <div style="background: var(--ctp-mantle, #292c3c); padding: 18px; border-radius: 16px; margin: 0; border: 1px solid var(--ctp-surface0, #414559); box-shadow: 0 10px 20px rgba(0,0,0,0.3); font-family: sans-serif;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="color: {{ if eq (.String "status") "up" }}var(--ctp-green, #a6d189){{ else }}var(--ctp-red, #e78284){{ end }}; font-size: 1.5rem;">●</span>
+            <a href="{{ printf "${BESZEL_URL}/system/%s" $name }}" style="color: var(--ctp-blue, #8caaee); text-decoration: none; font-weight: 900; font-size: 1.6rem; letter-spacing: -0.5px;">{{ $name }}</a>
+          </div>
+          <span style="color: var(--ctp-subtext1, #b5bfe2); font-size: 1rem; font-family: monospace; background: var(--ctp-surface1, #494d64); padding: 4px 12px; border-radius: 8px;">{{ .String "host" }}</span>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 25px;">
+          <div style="flex: 1; background: var(--ctp-base, #303446); padding: 12px; border-radius: 12px; border-left: 5px solid var(--ctp-mauve, #ca9ee6);">
+            <div style="color: var(--ctp-overlay1, #838ba7); font-size: 0.85rem; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">CPU</div>
+            <div style="color: var(--ctp-text, #c6d0f5); font-size: 1.25rem; font-weight: 800;">{{ $info.Int "t" }} <span style="font-size: 0.9rem; font-weight: 500; color: var(--ctp-subtext0, #a5adce);">Threads</span></div>
+          </div>
+          <div style="flex: 1; background: var(--ctp-base, #303446); padding: 12px; border-radius: 12px; border-left: 5px solid var(--ctp-maroon, #ea999c);">
+            <div style="color: var(--ctp-overlay1, #838ba7); font-size: 0.85rem; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Uptime</div>
+            <div style="color: var(--ctp-text, #c6d0f5); font-size: 1.25rem; font-weight: 800;">{{ printf "%.1f" (div ($info.Float "u") 86400) }} <span style="font-size: 0.9rem; font-weight: 500; color: var(--ctp-subtext0, #a5adce);">Tage</span></div>
+          </div>
+          <div style="flex: 1; background: var(--ctp-base, #303446); padding: 12px; border-radius: 12px; border-left: 5px solid var(--ctp-teal, #81c8be);">
+            <div style="color: var(--ctp-overlay1, #838ba7); font-size: 0.85rem; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Netz</div>
+            <div style="color: var(--ctp-text, #c6d0f5); font-size: 1.25rem; font-weight: 800;">{{ printf "%.1f" (div ($info.Float "bb") 1024) }} <span style="font-size: 0.9rem; font-weight: 500; color: var(--ctp-subtext0, #a5adce);">MB/s</span></div>
+          </div>
+          <div style="flex: 1; background: var(--ctp-base, #303446); padding: 12px; border-radius: 12px; border-left: 5px solid var(--ctp-yellow, #e5c890);">
+            <div style="color: var(--ctp-overlay1, #838ba7); font-size: 0.85rem; text-transform: uppercase; font-weight: bold; margin-bottom: 4px;">Temp</div>
+            <div style="color: var(--ctp-text, #c6d0f5); font-size: 1.25rem; font-weight: 800;">{{ printf "%.0f" ($info.Float "dt") }}°C</div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 15px;">
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 1rem; margin-bottom: 6px; font-weight: bold;">
+              <span style="color: var(--ctp-mauve, #ca9ee6);">CPU Load</span>
+              <span style="color: var(--ctp-text, #c6d0f5);">{{ $info.Float "cpu" }}%</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: var(--ctp-surface1, #494d64); border-radius: 6px; overflow: hidden;">
+              <div style="width: {{ $info.Float "cpu" }}%; height: 100%; background: var(--ctp-mauve, #ca9ee6);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 1rem; margin-bottom: 6px; font-weight: bold;">
+              <span style="color: var(--ctp-peach, #ef9f76);">RAM Usage</span>
+              <span style="color: var(--ctp-text, #c6d0f5);">{{ $info.Float "mp" }}%</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: var(--ctp-surface1, #494d64); border-radius: 6px; overflow: hidden;">
+              <div style="width: {{ $info.Float "mp" }}%; height: 100%; background: var(--ctp-peach, #ef9f76);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 1rem; margin-bottom: 6px; font-weight: bold;">
+              <span style="color: var(--ctp-yellow, #e5c890);">Disk Storage</span>
+              <span style="color: var(--ctp-text, #c6d0f5);">{{ $info.Float "dp" }}%</span>
+            </div>
+            <div style="width: 100%; height: 12px; background: var(--ctp-surface1, #494d64); border-radius: 6px; overflow: hidden;">
+              <div style="width: {{ $info.Float "dp" }}%; height: 100%; background: var(--ctp-yellow, #e5c890);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {{ end }}
