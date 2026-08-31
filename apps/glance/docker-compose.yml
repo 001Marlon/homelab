@@ -11,4 +11,8 @@ services:
     ports:
       - 8000:8080
     restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.glance.rule=Host(`marlonslk.localhost`)"
+      - "traefik.http.routers.glance.entrypoints=web"
 networks: {}
