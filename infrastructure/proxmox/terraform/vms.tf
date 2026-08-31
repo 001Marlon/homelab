@@ -101,7 +101,7 @@ resource "proxmox_virtual_environment_vm" "debian" {
 
     user_account {
       username = "root"
-      keys     = [var.ssh_public_key]
+      keys     = var.ssh_public_keys
     }
   }
 }

@@ -1,6 +1,12 @@
 # ---General---
 
-ssh_public_key = "ssh-ed25519 AAAAC3N..." # Put your Public SSH Key here
+# Put your Public SSH Key or even multiple keys here
+ssh_public_keys= [
+  "ssh-ed25519 AAAAC3N_1...",
+  "ssh-ed25519 AAAAC3N_2...",
+  "ssh-ed25519 AAAAC3N_3..."
+]
+
 proxmox_node_name = "homelab-pve01"
 default_gateway = "192.168.178.1"
 default_dns_server = "192.168.178.1"

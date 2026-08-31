@@ -1,7 +1,7 @@
 # ---General---
 
-variable "ssh_public_key" {
-  type        = string
+variable "ssh_public_keys" {
+  type        = list(string)
   sensitive   = true
 }
 

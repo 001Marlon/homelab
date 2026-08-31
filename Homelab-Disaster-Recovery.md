@@ -81,7 +81,7 @@ cp homelab.tfvars.example homelab.tfvars
 
 Anschließend `homelab.tfvars` öffnen und die nötigen Werte anpassen, u. a.:
 
-- `ssh_public_key` – eigener öffentlicher SSH-Key
+- `ssh_public_keys` – eigene öffentliche SSH-Keys
 - Proxmox-Zugangsdaten (`proxmox_endpoint`, `proxmox_username`, `proxmox_password`)
 - ggf. weitere umgebungsspezifische Werte (VM-IDs, IPs, HDD-IDs etc.)
 
