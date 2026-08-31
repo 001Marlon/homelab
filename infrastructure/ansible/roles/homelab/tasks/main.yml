@@ -1,0 +1,7 @@
+---
+- name: Clone Homelab repository
+  ansible.builtin.git:
+    repo: https://github.com/001Marlon/homelab.git
+    dest: /homelab
+    version: main
+    update: true

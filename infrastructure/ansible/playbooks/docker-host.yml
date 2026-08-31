@@ -1,0 +1,9 @@
+---
+- name: Configure Homelab Docker Host
+  hosts: homelab-debian
+  become: true
+
+  roles:
+    - common
+    - docker
+    - homelab
