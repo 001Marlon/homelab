@@ -1,0 +1,230 @@
+name: arrstack
+
+# ============================================================
+# Wichtig zum Verständnis der Volumes:
+# Damit Sonarr/Radarr Dateien per Hardlink/Atomic-Move statt
+# Kopieren verschieben können, MUSS jeder Container, der mit
+# Mediendateien arbeitet (Sonarr, Radarr, qBittorrent, SABnzbd),
+# denselben Basis-Mount auf denselben internen Pfad (/data)
+# gemountet bekommen. Kein Aufteilen in separate Volumes pro App!
+#
+# Struktur auf dem TrueNAS-Mount:
+# /homelab/data/media
+# ├── movies
+# ├── tv
+# └── downloads
+#     ├── torrents            (qBittorrent Save Path)
+#     └── usenet
+#         └── incomplete      (SABnzbd Temp-Ordner)
+#
+# Arbeitsordner auf dem Debian-Host: /homelab/apps/arr-stack
+# ============================================================
+
+x-common-env: &common-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  UMASK: ${UMASK}
+  TZ: ${TZ}
+
+services:
+
+  # ------------------------------------------------------------
+  # Gluetun - VPN-Tunnel mit Killswitch (ProtonVPN via WireGuard)
+  # Prowlarr und qBittorrent teilen sich Gluetuns Netzwerk-Namespace
+  # -> ihr gesamter Traffic läuft zwangsweise durch den VPN-Tunnel,
+  # bricht der Tunnel weg, bricht auch ihre Internetverbindung weg.
+  #
+  # WICHTIG: Weil prowlarr/qbittorrent kein eigenes Docker-Netzwerk
+  # mehr haben, erreichst du sie von anderen Containern (sonarr,
+  # radarr) aus jetzt über den Hostnamen "gluetun" statt über ihren
+  # eigenen Namen, z.B. http://gluetun:9696 statt http://prowlarr:9696
+  # ------------------------------------------------------------
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      - arrnet
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=${PROTONVPN_WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${PROTONVPN_WIREGUARD_ADDRESSES}
+      - SERVER_COUNTRIES=${PROTONVPN_SERVER_COUNTRY}
+      - VPN_PORT_FORWARDING=on
+      - TZ=${TZ}
+      - UPDATER_PERIOD=24h
+    ports:
+      # Prowlarr WebUI (interner Port 9696, wie im prowlarr-Service gewohnt)
+      - "${PROWLARR_PORT}:9696"
+      # qBittorrent WebUI + Torrent-Port
+      - "${QBITTORRENT_PORT}:${QBITTORRENT_PORT}"
+      - "${QBITTORRENT_TORRENT_PORT}:${QBITTORRENT_TORRENT_PORT}"
+      - "${QBITTORRENT_TORRENT_PORT}:${QBITTORRENT_TORRENT_PORT}/udp"
+    volumes:
+      - ${CONFIG_ROOT}/gluetun:/gluetun
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9999"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Prowlarr - zentrale Indexer-Verwaltung, pusht an Sonarr/Radarr
+  # Läuft durch den Gluetun-VPN-Tunnel (kein eigenes Docker-Netzwerk)
+  # ------------------------------------------------------------
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: "service:gluetun"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_ROOT}/prowlarr:/config
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # FlareSolverr - löst Cloudflare-Challenges für Prowlarr-Indexer
+  # ------------------------------------------------------------
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    networks:
+      - arrnet
+    environment:
+      - LOG_LEVEL=info
+      - TZ=${TZ}
+    ports:
+      - "${FLARESOLVERR_PORT}:8191"
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Sonarr - TV-Serien
+  # ------------------------------------------------------------
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    networks:
+      - arrnet
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_ROOT}/sonarr:/config
+      - ${MEDIA_ROOT}:/data
+    ports:
+      - "${SONARR_PORT}:8989"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Radarr - Filme
+  # ------------------------------------------------------------
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    networks:
+      - arrnet
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_ROOT}/radarr:/config
+      - ${MEDIA_ROOT}:/data
+    ports:
+      - "${RADARR_PORT}:7878"
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # qBittorrent - Torrent-Downloadclient
+  # Läuft durch den Gluetun-VPN-Tunnel (kein eigenes Docker-Netzwerk,
+  # kein eigenes "ports:" mehr -> siehe gluetun-Service oben)
+  # ------------------------------------------------------------
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: "service:gluetun"
+    environment:
+      <<: *common-env
+      WEBUI_PORT: ${QBITTORRENT_PORT}
+    volumes:
+      - ${CONFIG_ROOT}/qbittorrent:/config
+      - ${MEDIA_ROOT}:/data
+    depends_on:
+      gluetun:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # SABnzbd - Usenet-Downloadclient
+  # ------------------------------------------------------------
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    networks:
+      - arrnet
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_ROOT}/sabnzbd:/config
+      - ${MEDIA_ROOT}:/data
+    ports:
+      - "${SABNZBD_PORT}:8080"
+    restart: unless-stopped
+
+  # ------------------------------------------------------------
+  # Jellyfin - Mediaserver
+  # ------------------------------------------------------------
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    user: "${PUID}:${PGID}"
+    networks:
+      - arrnet
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/jellyfin/config:/config
+      - ${CONFIG_ROOT}/jellyfin/cache:/cache
+      - ${MEDIA_ROOT}:/data:ro
+    ports:
+      - "${JELLYFIN_PORT}:8096"
+    restart: unless-stopped
+    # Für Hardware-Transcoding ggf. devices: - /dev/dri/renderD128:/dev/dri/renderD128
+
+  # ------------------------------------------------------------
+  # Seerr - Request-Frontend
+  # ------------------------------------------------------------
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    container_name: seerr
+    init: true
+    networks:
+      - arrnet
+    environment:
+      LOG_LEVEL: info
+      TZ: ${TZ}
+    volumes:
+      - ${CONFIG_ROOT}/jellyseerr:/app/config
+    ports:
+      - "${JELLYSEERR_PORT}:5055"
+    depends_on:
+      - jellyfin
+      - sonarr
+      - radarr
+    restart: unless-stopped
+
+networks:
+  arrnet:
+    driver: bridge

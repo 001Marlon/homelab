@@ -1,0 +1,13 @@
+{% for key, value in secrets.terraform.items() %}
+{% if value is sequence and value is not string %}
+{{ key }} = [
+{% for item in value %}
+  "{{ item }}"{{ "," if not loop.last else "" }}
+{% endfor %}
+]
+{% elif value is number %}
+{{ key }} = {{ value }}
+{% else %}
+{{ key }} = "{{ value }}"
+{% endif %}
+{% endfor %}

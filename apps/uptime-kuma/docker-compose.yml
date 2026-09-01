@@ -1,0 +1,11 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    environment:
+      - TZ=Europe/Berlin
+    ports:
+      - "8003:3001"
+    volumes:
+      - /homelab/apps/uptime-kuma/data:/app/data
+    restart: unless-stopped

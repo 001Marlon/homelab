@@ -1,0 +1,18 @@
+services:
+  arcane:
+    image: ghcr.io/getarcaneapp/manager:latest
+    container_name: arcane
+    ports:
+      - '8002:3552'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+      # Optional host project mount:
+      # - /path/to/projects:/app/data/projects
+    environment:
+      - APP_URL=https://arcane.marlonslk.de
+      - PUID=1000
+      - PGID=1000
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+    restart: unless-stopped

@@ -1,6 +1,8 @@
 # General
 .env
 .env.*
+*.env
+/homelab-secrets.yml
 
 # Terraform
 .terraform/

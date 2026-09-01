@@ -1,0 +1,16 @@
+---
+- name: Render Terraform variables from homelab secrets
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Load homelab secrets
+      ansible.builtin.set_fact:
+        secrets: "{{ lookup('file', playbook_dir + '/../../../homelab-secrets.yml') | from_yaml }}"
+
+    - name: Render terraform.tfvars for Terraform
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/templates/homelab.tfvars.j2"
+        dest: "{{ playbook_dir }}/../../proxmox/terraform/terraform.tfvars"
+        mode: "0600"

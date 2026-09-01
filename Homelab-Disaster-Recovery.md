@@ -74,31 +74,35 @@ terraform --version
 
 ## 4. Terraform konfigurieren
 
-### 4.1 tfvars-Datei anlegen
+### 4.1 tfvars-Datei erzeugen
 
-Terraform verwendet eine `.tfvars`-Datei für Zugangsdaten und umgebungsspezifische Konfigurationswerte. Da `homelab.tfvars` sensible Daten enthalten kann, liegt diese Datei nicht im Repository. Stattdessen befindet sich dort eine Vorlage.
+Terraform verwendet eine `.tfvars`-Datei für Zugangsdaten und umgebungsspezifische Konfigurationswerte. Diese Werte kommen nicht mehr aus einer eigenen Terraform-Vorlage, sondern aus der zentralen `homelab-secrets.yml` im Repository-Root, die auch die Secrets aller Docker-Apps enthält. Sie liegt nicht im Repository; stattdessen gibt es dort eine Vorlage.
 
-In das Terraform-Verzeichnis wechseln:
-
-```bash
-cd infrastructure/proxmox/terraform
-```
-
-Eine Kopie der Vorlage erstellen:
+Im Repository-Root eine Kopie der Vorlage erstellen:
 
 ```bash
-cp homelab.tfvars.example homelab.tfvars
+cp homelab-secrets.yml.example homelab-secrets.yml
 ```
 
-Anschließend `homelab.tfvars` öffnen und die benötigten Werte anpassen, unter anderem:
+Anschließend `homelab-secrets.yml` öffnen und alle Platzhalter durch echte Werte ersetzen, unter anderem im `terraform`-Block:
 
 - `ssh_public_keys` – die öffentlichen SSH-Keys, die Zugriff auf die erstellten Systeme erhalten sollen
 - Proxmox-Zugangsdaten (`proxmox_endpoint`, `proxmox_username`, `proxmox_password`)
 - gegebenenfalls weitere umgebungsspezifische Werte wie VM-IDs, IP-Adressen oder Hardware-Konfigurationen
 
+Danach die `terraform.tfvars` daraus rendern:
+
+```bash
+cd infrastructure/ansible
+ansible-playbook playbooks/render-terraform-vars.yml
+```
+
+Das erzeugt `infrastructure/proxmox/terraform/terraform.tfvars`. Der Dateiname `terraform.tfvars` wird von Terraform automatisch geladen, ohne dass er bei den folgenden Befehlen über `-var-file` mitgegeben werden muss.
+
 ### 4.2 Terraform initialisieren
 
 ```bash
+cd ../proxmox/terraform
 terraform init
 ```
 
@@ -108,14 +112,12 @@ Dadurch werden unter anderem die benötigten Terraform-Provider heruntergeladen.
 
 ## 5. Infrastruktur mit Terraform erstellen
 
-Ab hier muss die `.tfvars`-Datei bei jedem Terraform-Befehl über `-var-file` mitgegeben werden.
-
 ### 5.1 Terraform Plan erstellen
 
 Zunächst prüfen, welche Änderungen Terraform durchführen würde:
 
 ```bash
-terraform plan -var-file="homelab.tfvars"
+terraform plan
 ```
 
 Den Plan kontrollieren.
@@ -125,7 +127,7 @@ Den Plan kontrollieren.
 Wenn der Plan korrekt aussieht:
 
 ```bash
-terraform apply -var-file="homelab.tfvars"
+terraform apply
 ```
 
 Terraform fragt anschließend nach einer Bestätigung:
@@ -297,23 +299,23 @@ Die `docker`-Rolle:
 
 ### 9.3 `homelab`
 
-Die `homelab`-Rolle ist für die Bereitstellung der eigentlichen Homelab-Konfiguration zuständig.
-
-Das Ziel ist:
+Die `homelab`-Rolle ist für die Bereitstellung der eigentlichen Homelab-Konfiguration zuständig und besteht aus zwei Schritten:
 
 ```text
 GitHub Repository
        ↓
-Ansible
+Ansible: Repository nach /homelab klonen/aktualisieren
        ↓
-/homelab auf dem Debian-Host
+Ansible: homelab-secrets.yml von der Kontrollmaschine laden
        ↓
-Docker Compose Anwendungen
+Ansible: pro App eine .env aus homelab-secrets.yml rendern
+       ↓
+/homelab/apps/<app>/.env auf dem Debian-Host
 ```
 
-Das vollständige Repository wird auf dem Debian-Docker-Host nach `/homelab` geklont bzw. aktualisiert.
+**Schritt 1 – Repository klonen:** Das vollständige Repository wird auf dem Debian-Docker-Host nach `/homelab` geklont bzw. aktualisiert. Dadurch ist das Repository auch auf dem Docker-Host die zentrale Beschreibung der Homelab-Konfiguration. Da die Docker-Compose-Dateien keine Secrets enthalten, ist dieser Teil unproblematisch öffentlich.
 
-Dadurch ist das Repository auch auf dem Docker-Host die zentrale Beschreibung der Homelab-Konfiguration.
+**Schritt 2 – Secrets ausrollen:** Ansible liest `homelab-secrets.yml` direkt von der Kontrollmaschine (die Datei wird dafür nie auf den Server kopiert oder ins Repository committed) und rendert daraus für jede App in `homelab-secrets.yml` eine `.env`-Datei, die per SSH nach `/homelab/apps/<app>/.env` übertragen wird. Neue Apps müssen dafür nur in `homelab-secrets.yml` ergänzt werden — die Rolle selbst muss nicht angepasst werden.
 
 ---
 
@@ -397,28 +399,31 @@ Der Service sollte aktiv sein.
 
 Die Docker-Compose-Konfigurationen der Homelab-Anwendungen liegen im Repository und werden zusammen mit dem Repository auf den Docker-Host übertragen.
 
-Die Compose-Dateien dürfen keine Secrets direkt enthalten. Secrets und umgebungsspezifische Werte müssen separat bereitgestellt werden.
+Die Compose-Dateien dürfen keine Secrets direkt enthalten. Secrets und umgebungsspezifische Werte kommen aus `homelab-secrets.yml` (siehe Abschnitt 4.1) und werden von der `homelab`-Ansible-Rolle als `.env`-Datei je App bereitgestellt (siehe Abschnitt 9.3).
 
 Das Repository soll grundsätzlich so aufgebaut sein, dass es ohne sensible Daten öffentlich auf GitHub liegen könnte.
 
-Die Wiederherstellung einer Anwendung folgt langfristig diesem Ablauf:
+Die Wiederherstellung einer Anwendung folgt diesem Ablauf:
 
 ```text
 Repository aktualisieren
         ↓
-Benötigte Secrets und Umgebungsvariablen bereitstellen
+Ansible-Playbook ausführen (klont Repo, rendert .env je App aus homelab-secrets.yml)
         ↓
-Docker Compose Stack durch Ansible starten
+Auf dem Docker-Host je App: docker compose up -d
         ↓
 Anwendung läuft
 ```
 
-Als erste automatisiert wiederhergestellte Anwendungen sind vorgesehen:
+Der letzte Schritt (`docker compose up -d` je App) ist aktuell **nicht** automatisiert. Nach einem Ansible-Lauf liegen alle Compose-Dateien und die passenden `.env`-Dateien bereits korrekt unter `/homelab/apps/<app>` auf dem Docker-Host, gestartet werden müssen die Stacks aber noch manuell:
 
-1. NetBird bzw. der zugehörige Reverse-Proxy-Stack
-2. Glance
+```bash
+ssh root@192.168.178.202
+cd /homelab/apps/<app>
+docker compose up -d
+```
 
-NetBird wird zuerst gestartet, da der Stack für den externen Zugriff auf das Homelab eine zentrale Infrastrukturkomponente ist.
+Das für alle Apps zu automatisieren (z. B. ein weiterer Task in der `homelab`-Rolle, der das für jeden Ordner unter `apps/` ausführt) ist ein offener Ausbauschritt.
 
 ---
 
@@ -433,6 +438,10 @@ Proxmox installieren
         ↓
 Repository klonen
         ↓
+homelab-secrets.yml aus der Vorlage befüllen
+        ↓
+Terraform-Variablen daraus rendern (render-terraform-vars.yml)
+        ↓
 Terraform erstellt die Infrastruktur
         ↓
 Ansible konfiguriert die VMs
@@ -441,11 +450,11 @@ Docker wird installiert
         ↓
 Homelab Repository wird auf dem Docker-Host bereitgestellt
         ↓
-Secrets und Umgebungsvariablen werden bereitgestellt
+Ansible rendert je App eine .env aus homelab-secrets.yml
         ↓
-Docker Compose startet die Anwendungen
+Docker Compose startet die Anwendungen (aktuell manuell je App)
         ↓
 Homelab ist wiederhergestellt
 ```
 
-Das GitHub-Repository ist dabei die zentrale Source of Truth für die deklarative Infrastruktur- und Anwendungskonfiguration. Sensible Zugangsdaten und Secrets werden getrennt vom öffentlichen Repository verwaltet.
+Das GitHub-Repository ist dabei die zentrale Source of Truth für die deklarative Infrastruktur- und Anwendungskonfiguration. Sensible Zugangsdaten und Secrets liegen ausschließlich in `homelab-secrets.yml`, die nie committed wird und nur auf der Kontrollmaschine existiert.
