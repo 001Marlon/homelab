@@ -1,5 +1,5 @@
 site_name: Homelab Docs
-site_url: ${MKDOCS_URL}
+site_url: https://docs.marlonslk.de
 site_author: Marlon
 site_description: Operations-first documentation for the homelab platform.
 

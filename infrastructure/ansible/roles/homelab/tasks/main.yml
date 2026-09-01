@@ -21,3 +21,20 @@
     label: "{{ item.key }}"
   vars:
     app_vars: "{{ item.value }}"
+
+- name: Find docker-compose.yml files for all apps
+  ansible.builtin.find:
+    paths: /homelab/apps
+    patterns: "docker-compose.yml"
+    recurse: true
+  register: compose_files
+
+- name: Start all docker compose stacks
+  ansible.builtin.command:
+    cmd: docker compose up -d
+    chdir: "{{ item.path | dirname }}"
+  loop: "{{ compose_files.files }}"
+  loop_control:
+    label: "{{ item.path | dirname }}"
+  register: compose_up
+  changed_when: "'Container' in compose_up.stderr and ('Started' in compose_up.stderr or 'Created' in compose_up.stderr or 'Recreated' in compose_up.stderr)"

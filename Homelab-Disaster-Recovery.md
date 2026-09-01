@@ -299,7 +299,7 @@ Die `docker`-Rolle:
 
 ### 9.3 `homelab`
 
-Die `homelab`-Rolle ist für die Bereitstellung der eigentlichen Homelab-Konfiguration zuständig und besteht aus zwei Schritten:
+Die `homelab`-Rolle ist für die Bereitstellung der eigentlichen Homelab-Konfiguration zuständig und besteht aus drei Schritten:
 
 ```text
 GitHub Repository
@@ -311,11 +311,17 @@ Ansible: homelab-secrets.yml von der Kontrollmaschine laden
 Ansible: pro App eine .env aus homelab-secrets.yml rendern
        ↓
 /homelab/apps/<app>/.env auf dem Debian-Host
+       ↓
+Ansible: docker-compose.yml je App suchen und "docker compose up -d" ausführen
+       ↓
+Alle Anwendungen laufen
 ```
 
 **Schritt 1 – Repository klonen:** Das vollständige Repository wird auf dem Debian-Docker-Host nach `/homelab` geklont bzw. aktualisiert. Dadurch ist das Repository auch auf dem Docker-Host die zentrale Beschreibung der Homelab-Konfiguration. Da die Docker-Compose-Dateien keine Secrets enthalten, ist dieser Teil unproblematisch öffentlich.
 
 **Schritt 2 – Secrets ausrollen:** Ansible liest `homelab-secrets.yml` direkt von der Kontrollmaschine (die Datei wird dafür nie auf den Server kopiert oder ins Repository committed) und rendert daraus für jede App in `homelab-secrets.yml` eine `.env`-Datei, die per SSH nach `/homelab/apps/<app>/.env` übertragen wird. Neue Apps müssen dafür nur in `homelab-secrets.yml` ergänzt werden — die Rolle selbst muss nicht angepasst werden.
+
+**Schritt 3 – Anwendungen starten:** Ansible sucht rekursiv unter `/homelab/apps` nach allen `docker-compose.yml`-Dateien und führt für jede gefundene App `docker compose up -d` im jeweiligen App-Ordner aus. Das läuft automatisch für jede App, die im Repository liegt — auch neu hinzugefügte, ohne dass die Rolle angepasst werden muss. Da `docker compose up -d` idempotent ist, ändert ein erneuter Lauf an bereits laufenden, unveränderten Stacks nichts.
 
 ---
 
@@ -403,27 +409,24 @@ Die Compose-Dateien dürfen keine Secrets direkt enthalten. Secrets und umgebung
 
 Das Repository soll grundsätzlich so aufgebaut sein, dass es ohne sensible Daten öffentlich auf GitHub liegen könnte.
 
-Die Wiederherstellung einer Anwendung folgt diesem Ablauf:
+Die Wiederherstellung einer Anwendung folgt diesem Ablauf, vollständig durch das Ansible-Playbook abgedeckt:
 
 ```text
 Repository aktualisieren
         ↓
-Ansible-Playbook ausführen (klont Repo, rendert .env je App aus homelab-secrets.yml)
+Ansible-Playbook ausführen (klont Repo, rendert .env je App aus homelab-secrets.yml,
+führt "docker compose up -d" für jede gefundene App aus)
         ↓
-Auf dem Docker-Host je App: docker compose up -d
-        ↓
-Anwendung läuft
+Alle Anwendungen laufen
 ```
 
-Der letzte Schritt (`docker compose up -d` je App) ist aktuell **nicht** automatisiert. Nach einem Ansible-Lauf liegen alle Compose-Dateien und die passenden `.env`-Dateien bereits korrekt unter `/homelab/apps/<app>` auf dem Docker-Host, gestartet werden müssen die Stacks aber noch manuell:
+Ein einzelner Lauf von
 
 ```bash
-ssh root@192.168.178.202
-cd /homelab/apps/<app>
-docker compose up -d
+ansible-playbook playbooks/docker-host.yml
 ```
 
-Das für alle Apps zu automatisieren (z. B. ein weiterer Task in der `homelab`-Rolle, der das für jeden Ordner unter `apps/` ausführt) ist ein offener Ausbauschritt.
+reicht damit aus, um nach einer Neuinstallation alle Apps im Repository mit den richtigen Secrets zu starten. Neue Apps werden automatisch mit erfasst, sobald ihr Ordner unter `apps/` liegt und ihre Secrets (falls benötigt) in `homelab-secrets.yml` eingetragen sind.
 
 ---
 
