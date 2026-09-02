@@ -1,0 +1,96 @@
+---
+- name: Sync NetBird reverse proxy services
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: Load homelab secrets
+      ansible.builtin.set_fact:
+        secrets: "{{ lookup('file', playbook_dir + '/../../../homelab-secrets.yml') | from_yaml }}"
+
+    - name: Get existing reverse proxy services
+      ansible.builtin.uri:
+        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services"
+        headers:
+          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+        return_content: true
+      register: existing_services
+
+    - name: Build domain -> id map of existing services
+      ansible.builtin.set_fact:
+        existing_by_domain: "{{ dict(existing_services.json | map(attribute='domain') | zip(existing_services.json | map(attribute='id'))) }}"
+
+    - name: Create missing reverse proxy services
+      ansible.builtin.uri:
+        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services"
+        method: POST
+        headers:
+          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+        body_format: json
+        body:
+          name: "{{ item.domain }}"
+          domain: "{{ item.domain }}"
+          mode: http
+          enabled: true
+          targets:
+            - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
+              target_type: peer
+              protocol: http
+              host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
+              port: "{{ item.port }}"
+              enabled: true
+          auth:
+            password_auth:
+              enabled: "{{ item.password_protected | default(true) }}"
+              password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
+        status_code: [200, 201]
+      loop: "{{ secrets.netbird_reverse_proxy.services }}"
+      loop_control:
+        label: "{{ item.domain }}"
+      when: item.domain not in existing_by_domain
+
+    - name: Update existing reverse proxy services (keep them in sync)
+      ansible.builtin.uri:
+        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services/{{ existing_by_domain[item.domain] }}"
+        method: PUT
+        headers:
+          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+        body_format: json
+        body:
+          name: "{{ item.domain }}"
+          domain: "{{ item.domain }}"
+          mode: http
+          enabled: true
+          targets:
+            - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
+              target_type: peer
+              protocol: http
+              host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
+              port: "{{ item.port }}"
+              enabled: true
+          auth:
+            password_auth:
+              enabled: "{{ item.password_protected | default(true) }}"
+              password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
+        status_code: [200, 201]
+      loop: "{{ secrets.netbird_reverse_proxy.services }}"
+      loop_control:
+        label: "{{ item.domain }}"
+      when: item.domain in existing_by_domain
+
+    - name: Build list of domains no longer declared
+      ansible.builtin.set_fact:
+        desired_domains: "{{ secrets.netbird_reverse_proxy.services | map(attribute='domain') | list }}"
+
+    - name: Remove reverse proxy services no longer in homelab-secrets.yml
+      ansible.builtin.uri:
+        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services/{{ item.value }}"
+        method: DELETE
+        headers:
+          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+        status_code: [200, 204]
+      loop: "{{ existing_by_domain | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      when: item.key not in desired_domains

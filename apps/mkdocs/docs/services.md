@@ -1,50 +1,48 @@
-# Service Inventory
+# Services
 
-This is the current inventory based on compose files in `/homelab/apps/*/docker-compose.yml`.
+Alle Anwendungen laufen als Docker-Compose-Stack unter `/homelab/apps/<name>` auf dem Debian-Host. Quelle: die jeweilige `docker-compose.yml` im Repository.
 
-## Critical services
+## Öffentlich erreichbar
 
-| Service | Why critical | Access |
-| :--- | :--- | :--- |
-| Cloudflare Tunnel | External access for web services | `host network` |
-| Playit Tunnel | External access for game services | `host network` |
-| Portainer | Operational control plane | `8002 -> 9443` |
-| Uptime Kuma | Fast outage visibility | `8003 -> 3001` |
+Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und automatischem TLS-Zertifikat. Zusätzlich zum Login der Anwendung selbst greift standardmäßig ein gemeinsames Passwort-Gate auf Proxy-Ebene (siehe [Sicherheit](security.md)) - einzelne Apps können davon ausgenommen werden (`password_protected: false`).
 
-## Application services
+| App | Domain | Host-Port | Zusatz-Passwort | Ordner |
+| --- | --- | --- | --- | --- |
+| Glance | marlonslk.de | 8000 | Nein (dient als öffentliche Startseite) | `apps/glance` |
+| MkDocs | docs.marlonslk.de | 8001 | Ja | `apps/mkdocs` |
+| Arcane | arcane.marlonslk.de | 8002 | Ja | `apps/arcane` |
+| Uptime Kuma | uptime.marlonslk.de | 8003 | Ja | `apps/uptime-kuma` |
+| MCSManager (Web) | mcsmanager.marlonslk.de | 8004 | Ja | `apps/mcsmanager` |
+| Paperless-ngx | paperless.marlonslk.de | 8006 | Ja | `apps/paperless` |
+| Immich | immich.marlonslk.de | 8007 | Ja | `apps/immich` |
+| Beszel | beszel.marlonslk.de | 8009 | Ja | `apps/beszel` |
+| Jellyfin | jellyfin.marlonslk.de | 8100 | Ja | `apps/arr-stack` |
+| Seerr | seerr.marlonslk.de | 8101 | Ja | `apps/arr-stack` |
 
-| Service | Category | Host Port(s) | Path |
-| :--- | :--- | :--- | :--- |
-| glance | Dashboard | `8000` | `/homelab/apps/glance` |
-| mkdocs | Documentation | `8001` | `/homelab/apps/mkdocs` |
-| mcsmanager (web) | Game admin | `8004` | `/homelab/apps/mcsmanager` |
-| dockge | Compose UI | `8005` | `/homelab/apps/dockge` |
-| paperless-ngx | Documents | `8006` | `/homelab/apps/paperless` |
-| immich | Photos | `8007` | `/homelab/apps/immich` |
-| vaultwarden | Password manager | `8008` | `/homelab/apps/vaultwarden` |
-| beszel | Monitoring | `8009` | `/homelab/apps/beszel` |
-| jellyfin | Media | `8010`, `7359/udp` | `/homelab/apps/jellyfin` |
-| qui | Download tooling | `8011` | `/homelab/apps/qui` |
-| qbittorrent | Downloads | `8012`, `6881/tcp+udp` | `/homelab/apps/qbittorrent` |
-| astroneer-server | Game server | `63089/udp` | `/homelab/apps/astroneer-server` |
-| mcsmanager (daemon) | Game runtime | `24444`, `25565` | `/homelab/apps/mcsmanager` |
-| website (nginx) | Static sites | `80` | `/homelab/apps/website` |
+Verwaltet über `infrastructure/ansible/playbooks/sync-reverse-proxy.yml`, gesteuert durch die `services`-Liste in `homelab-secrets.yml`.
 
-## Known conflicts and sharp edges
+## Nur per VPN/LAN erreichbar
 
-!!! warning "Port overlap"
-    `glance` and any other dashboard planned for `8000` cannot run on the same host port at the same time.
+Bewusst nicht öffentlich, da Admin-Oberflächen bzw. Downloadclients ohne eigenes starkes Auth-Konzept:
 
-!!! warning "Host networking"
-    `cloudflare-tunnel`, `playit-tunnel`, and `beszel-agent` use host networking. Changes there bypass normal bridge isolation.
+| App | Host-Port | Ordner |
+| --- | --- | --- |
+| SABnzbd | 8102 | `apps/arr-stack` |
+| qBittorrent | 8103 (über Gluetun) | `apps/arr-stack` |
+| Prowlarr | 8105 (über Gluetun) | `apps/arr-stack` |
+| Radarr | 8106 | `apps/arr-stack` |
+| Sonarr | 8107 | `apps/arr-stack` |
+| FlareSolverr | 8108 (intern, kein UI) | `apps/arr-stack` |
+| MCSManager Daemon | 24444, 25565 | `apps/mcsmanager` |
 
-## Quick locate
+## Infrastruktur
 
-```bash
-# list all stacks
-ls -1 /homelab/apps
+| Komponente | Ort | Zweck |
+| --- | --- | --- |
+| Netbird-Client | `apps/netbird` (Debian-Host) | VPN-Mesh-Beitritt des Docker-Hosts |
+| NetBird Server + Dashboard | VPS | Selbstgehostetes Management, `netbird.vps.marlonslk.de` |
+| NetBird Reverse Proxy + Traefik | VPS | TLS-Terminierung und Routing für die öffentlichen Domains oben |
 
-# inspect one stack
-cd /homelab/apps/<service>
-docker compose ps
-```
+## Neue App hinzufügen
+
+Siehe [Runbook](operations.md).

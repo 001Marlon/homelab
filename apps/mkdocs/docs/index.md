@@ -1,57 +1,20 @@
-# Homelab Handbook
+# Homelab Wiki
 
-<div class="hero">
-  <p class="hero-kicker">Self-hosted platform</p>
-  <h1>One place for operations, not guesswork.</h1>
-  <p class="hero-lead">This documentation is written for day-to-day use: what runs, where it runs, and what to check first when something breaks.</p>
-</div>
+Dokumentation für Betrieb, Wiederherstellung und Aufbau des Homelabs.
 
-<div class="grid cards" markdown>
+## Bereiche
 
-- :material-rocket-launch: **Start Here**
+| Seite | Inhalt |
+| --- | --- |
+| [Architektur](platform.md) | Aufbau von Proxmox bis zur einzelnen App, Secrets-Fluss |
+| [Hardware](hardware.md) | Server-Spezifikationen |
+| [Services](services.md) | Alle laufenden Apps mit Port und Erreichbarkeit |
+| [Runbook](operations.md) | Wiederkehrende Aufgaben: Updates, neue App, neuer Reverse-Proxy-Eintrag |
+| [Sicherheit](security.md) | Umgang mit Secrets, Zugriffsschutz |
+| [Disaster Recovery](disaster-recovery.md) | Vollständige Wiederherstellung nach Totalausfall |
 
-  ---
+## Kurzüberblick
 
-  New deployment? Read [Platform Layout](platform.md) first.
+Das Homelab läuft auf einem Proxmox-Host zu Hause. Terraform erstellt daraus die VMs, Ansible installiert Docker und startet die Anwendungen. Ein separater VPS stellt über NetBird den öffentlichen Zugriff auf ausgewählte Apps bereit. Alle Zugangsdaten liegen zentral in einer einzigen, nicht versionierten Datei (`homelab-secrets.yml`) - Details dazu unter [Sicherheit](security.md).
 
-- :material-monitor-dashboard: **Live Services**
-
-  ---
-
-  Open [Service Inventory](services.md) for ports, purpose, and exposure.
-
-- :material-wrench-clock: **On-call Basics**
-
-  ---
-
-  Use [Operations Runbook](operations.md) for updates, restore, and incident flow.
-
-- :material-shield-check: **Risk Controls**
-
-  ---
-
-  Security priorities are listed in [Security Notes](security.md).
-
-</div>
-
-## What matters most
-
-!!! warning "Public edge"
-    `cloudflare-tunnel` and `playit-tunnel` are your external entry points. Treat changes there as high-impact.
-
-!!! warning "Single source of truth"
-    Compose stacks live under `/homelab/apps/<service>`. Keep paths consistent across Dockge, Komodo, and manual `docker compose` commands.
-
-!!! info "Fast health check"
-    If you only have two minutes: verify `uptime-kuma`, `portainer`, `cloudflare-tunnel`, and `immich`.
-
-## Current service footprint
-
-- Total compose projects: `17`
-- Primary stack root: `/homelab/apps`
-- Typical maintenance command:
-
-```bash
-cd /homelab/apps/<service>
-docker compose pull && docker compose up -d
-```
+Das GitHub-Repository [`001Marlon/homelab`](https://github.com/001Marlon/homelab) ist die alleinige Quelle für Infrastruktur- und Anwendungskonfiguration und enthält keine sensiblen Daten.

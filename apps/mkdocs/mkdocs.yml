@@ -1,38 +1,33 @@
-site_name: Homelab Docs
+site_name: Homelab Wiki
 site_url: https://docs.marlonslk.de
 site_author: Marlon
-site_description: Operations-first documentation for the homelab platform.
+site_description: Dokumentation für Marlons Homelab.
 
 theme:
   name: material
-  language: en
-  logo: material/server
-  favicon: material/server-network
+  language: de
+  icon:
+    logo: material/server
+  favicon: material/server
   palette:
     - scheme: default
       primary: teal
-      accent: deep orange
       toggle:
         icon: material/weather-night
-        name: Switch to dark mode
+        name: Dark Mode
     - scheme: slate
       primary: teal
-      accent: amber
       toggle:
         icon: material/weather-sunny
-        name: Switch to light mode
+        name: Light Mode
   features:
     - navigation.sections
     - navigation.top
-    - navigation.instant
     - navigation.tracking
     - search.suggest
     - search.highlight
     - content.code.copy
     - toc.follow
-
-extra_css:
-  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition
@@ -48,13 +43,15 @@ markdown_extensions:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - tables
 
 nav:
-  - Home: index.md
-  - Platform:
-      - Layout & Architecture: platform.md
-      - Service Inventory: services.md
-  - Operations:
+  - Start: index.md
+  - Plattform:
+      - Architektur: platform.md
+      - Hardware: hardware.md
+      - Services: services.md
+  - Betrieb:
       - Runbook: operations.md
-      - Security Notes: security.md
-  - Hardware: hardware.md
+      - Sicherheit: security.md
+  - Disaster Recovery: disaster-recovery.md
