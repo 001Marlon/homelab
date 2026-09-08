@@ -1,0 +1,35 @@
+[public]
+address = "0.0.0.0:25565"
+
+[server]
+address = "host.docker.internal:25567"
+directory = "/lazymc"
+command = "/wake-server.sh"
+start_timeout = 120
+stop_timeout = 60
+wake_whitelist = true
+
+[time]
+sleep_after = 600
+minimum_online_time = 60
+
+[motd]
+sleeping = "§8Server schläft gerade\n§2Verbinde dich, um ihn zu starten"
+starting = "§2Server startet...\n§7Bitte kurz warten"
+stopping = "§8Server fährt herunter...\n§7Bitte kurz warten"
+
+[join]
+methods = ["hold", "kick"]
+
+[join.hold]
+timeout = 25
+
+[join.kick]
+starting = "Der Server startet gerade... §r\n\nBitte versuch's in einer Minute nochmal."
+stopping = "Der Server fährt gerade runter... §r\n\nBitte versuch's in einer Minute nochmal."
+
+[advanced]
+rewrite_server_properties = false
+
+[config]
+version = "0.2.11"

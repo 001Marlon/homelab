@@ -38,3 +38,20 @@ services:
       - /var/lib/pelican/:/var/lib/pelican/
       - /var/log/pelican/:/var/log/pelican/
       - /tmp/pelican/:/tmp/pelican/
+
+  lazymc:
+    build: ./lazymc
+    container_name: pelican-lazymc
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      PELICAN_URL: ${APP_URL}
+      PELICAN_API_KEY: ${LAZYMC_API_KEY}
+      PELICAN_SERVER_UUID: ${LAZYMC_SERVER_UUID}
+    ports:
+      - "25565:25565"
+    volumes:
+      - ./lazymc/lazymc.toml:/lazymc/lazymc.toml:ro
