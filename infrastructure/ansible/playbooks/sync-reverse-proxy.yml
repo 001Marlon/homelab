@@ -28,23 +28,29 @@
         headers:
           Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
         body_format: json
-        body:
+        body: "{{ service_body }}"
+        status_code: [200, 201]
+      vars:
+        service_mode: "{{ item.mode | default('http') }}"
+        base_body:
           name: "{{ item.domain }}"
           domain: "{{ item.domain }}"
-          mode: http
+          mode: "{{ service_mode }}"
+          listen_port: "{{ item.listen_port | default(0) }}"
           enabled: true
           targets:
             - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
               target_type: peer
-              protocol: http
+              protocol: "{{ service_mode }}"
               host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
               port: "{{ item.port }}"
               enabled: true
+        auth_block:
           auth:
             password_auth:
               enabled: "{{ item.password_protected | default(true) }}"
               password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
-        status_code: [200, 201]
+        service_body: "{{ base_body | combine(auth_block if service_mode == 'http' else {}) }}"
       loop: "{{ secrets.netbird_reverse_proxy.services }}"
       loop_control:
         label: "{{ item.domain }}"
@@ -57,23 +63,29 @@
         headers:
           Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
         body_format: json
-        body:
+        body: "{{ service_body }}"
+        status_code: [200, 201]
+      vars:
+        service_mode: "{{ item.mode | default('http') }}"
+        base_body:
           name: "{{ item.domain }}"
           domain: "{{ item.domain }}"
-          mode: http
+          mode: "{{ service_mode }}"
+          listen_port: "{{ item.listen_port | default(0) }}"
           enabled: true
           targets:
             - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
               target_type: peer
-              protocol: http
+              protocol: "{{ service_mode }}"
               host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
               port: "{{ item.port }}"
               enabled: true
+        auth_block:
           auth:
             password_auth:
               enabled: "{{ item.password_protected | default(true) }}"
               password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
-        status_code: [200, 201]
+        service_body: "{{ base_body | combine(auth_block if service_mode == 'http' else {}) }}"
       loop: "{{ secrets.netbird_reverse_proxy.services }}"
       loop_control:
         label: "{{ item.domain }}"
