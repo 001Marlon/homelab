@@ -1,0 +1,34 @@
+services:
+  panel:
+    image: ghcr.io/pelican-dev/panel:latest
+    container_name: pelican-panel
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      XDG_DATA_HOME: /pelican-data
+      APP_URL: ${APP_URL}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+    ports:
+      - "8005:80"
+    volumes:
+      - ./panel/data:/pelican-data
+      - ./panel/logs:/var/www/html/storage/logs
+
+  wings:
+    image: ghcr.io/pelican-dev/wings:latest
+    container_name: pelican-wings
+    restart: unless-stopped
+    tty: true
+    environment:
+      TZ: Europe/Berlin
+    ports:
+      - "8080:8080"
+      - "2022:2022"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers/:/var/lib/docker/containers/
+      - /etc/pelican/:/etc/pelican/
+      - /var/lib/pelican/:/var/lib/pelican/
+      - /var/log/pelican/:/var/log/pelican/
+      - /tmp/pelican/:/tmp/pelican/
