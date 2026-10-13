@@ -1,0 +1,34 @@
+# ============================================================
+# Mediarium - All-in-one-Alternative zum arr-stack
+# (Indexer, Torrent/Usenet-Download, Import, Umbenennen)
+#
+# Nutzt denselben TrueNAS-Mount wie der arr-stack. Ein einziges
+# /data-Volume, damit Imports per Hardlink statt Kopie laufen.
+# Eigener Download-Ordner, damit sich Mediarium und der arr-stack
+# beim Parallelbetrieb nicht in die Quere kommen.
+#
+# Torrents: Das eingebaute WireGuard-VPN im UI einrichten (ProtonVPN),
+# sonst laufen Torrents über die Heim-IP. Kein Peer-Port nach außen,
+# weil der Port bei aktivem VPN ohnehin nicht genutzt wird.
+# ============================================================
+
+services:
+  mediarium:
+    image: ghcr.io/rdborg/mediarium:latest
+    container_name: mediarium
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "8109:8264"
+    environment:
+      PUID: 3000
+      PGID: 3000
+      UMASK: "002"
+      TZ: Europe/Berlin
+      DOWNLOADS_DIR: /data/downloads/mediarium
+      MOVIES_DIR: /data/movies
+      TV_DIR: /data/tv
+    volumes:
+      - ./config:/config
+      - /homelab/data/media:/data

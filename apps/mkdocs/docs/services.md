@@ -17,6 +17,10 @@ Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und auto
 | Beszel | beszel.marlonslk.de | 8009 | Ja | `apps/beszel` |
 | Jellyfin | jellyfin.marlonslk.de | 8100 | Ja | `apps/arr-stack` |
 | Seerr | seerr.marlonslk.de | 8101 | Ja | `apps/arr-stack` |
+| Mediarium | mediarium.marlonslk.de | 8109 | Ja | `apps/mediarium` |
+
+!!! warning
+    Mediarium ist eine bewusste Ausnahme von der Regel, Download-Clients nur per VPN/LAN erreichbar zu machen (siehe [Sicherheit](security.md)). Das Zusatz-Passwort darf hier deshalb nicht abgeschaltet werden.
 
 Verwaltet über `infrastructure/ansible/playbooks/sync-reverse-proxy.yml`, gesteuert durch die `services`-Liste in `homelab-secrets.yml`.
 
