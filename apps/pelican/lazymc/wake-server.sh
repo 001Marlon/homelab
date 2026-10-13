@@ -22,7 +22,9 @@ trap stop_server TERM INT
 
 power start
 
+# Foreground short sleeps, not "sleep N & wait $!" - busybox ash doesn't
+# reliably interrupt a backgrounded wait on SIGTERM, which silently broke
+# the whole stop path (server never actually slept, see incident notes).
 while true; do
-  sleep 3600 &
-  wait $!
+  sleep 1
 done

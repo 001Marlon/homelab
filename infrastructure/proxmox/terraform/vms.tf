@@ -47,6 +47,14 @@ resource "proxmox_virtual_environment_vm" "truenas" {
   started       = true
   stop_on_destroy = true
   keyboard_layout = "de"
+
+  # Startet als erstes; Debian wartet up_delay Sekunden, damit die NFS-Shares
+  # bereitstehen, bevor Docker auf dem Debian-Host hochfährt
+  startup {
+    order      = 1
+    up_delay   = 90
+    down_delay = 60
+  }
 }
 
 # ---------- Debian - Mainly used for docker to run applications ----------
@@ -57,9 +65,16 @@ resource "proxmox_virtual_environment_vm" "debian" {
   vm_id = var.debian_vm_id
   description = "Debian - Managed by Terraform"
 
+  on_boot         = true
   started         = true
   stop_on_destroy = true
   keyboard_layout = "de"
+
+  # Erst nach TrueNAS starten (NFS-Mount für den Arr-Stack), beim Herunterfahren
+  # zuerst stoppen
+  startup {
+    order = 2
+  }
 
   cpu {
     cores = 8

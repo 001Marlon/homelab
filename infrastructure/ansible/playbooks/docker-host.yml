@@ -3,7 +3,18 @@
   hosts: homelab-debian
   become: true
 
+  pre_tasks:
+    - name: Load homelab secrets
+      ansible.builtin.set_fact:
+        secrets: "{{ lookup('file', playbook_dir + '/../../../homelab-secrets.yml') | from_yaml }}"
+      tags: always
+
   roles:
-    - common
-    - docker
-    - homelab
+    - role: common
+      tags: common
+    - role: docker
+      tags: docker
+    - role: storage
+      tags: storage
+    - role: homelab
+      tags: homelab

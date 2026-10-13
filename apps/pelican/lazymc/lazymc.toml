@@ -8,6 +8,13 @@ command = "/wake-server.sh"
 start_timeout = 120
 stop_timeout = 60
 wake_whitelist = true
+# Default is true, which sends SIGSTOP instead of SIGTERM to save/resume
+# faster. That's meant for lazymc spawning Minecraft directly - here
+# "command" is just our API wrapper script, so freezing it does nothing to
+# the actual server (a separate container) and blocks our SIGTERM trap
+# entirely (SIGSTOP can't be caught). This was the actual root cause of the
+# server never sleeping. Keep this false.
+freeze_process = false
 
 [time]
 sleep_after = 600

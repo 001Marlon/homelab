@@ -1,0 +1,42 @@
+---
+- name: Install NFS client
+  ansible.builtin.apt:
+    name: nfs-common
+    state: present
+
+- name: Create NFS mount points
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ secrets.storage.nfs_mounts }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+- name: Mount NFS shares from TrueNAS (persisted in /etc/fstab)
+  ansible.posix.mount:
+    src: "{{ item.src }}"
+    path: "{{ item.path }}"
+    fstype: nfs
+    opts: "{{ item.opts | default('defaults,_netdev,nofail') }}"
+    state: mounted
+  loop: "{{ secrets.storage.nfs_mounts }}"
+  loop_control:
+    label: "{{ item.src }} -> {{ item.path }}"
+
+# Docker darf erst starten, wenn die NFS-Mounts versucht wurden - sonst binden
+# die Container nach einem Reboot den leeren lokalen Ordner statt des Shares.
+- name: Create Docker systemd drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+    mode: "0755"
+
+- name: Start Docker after remote filesystems
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/docker.service.d/wait-for-nfs.conf
+    content: |
+      [Unit]
+      After=remote-fs.target
+    mode: "0644"
+  notify: Reload systemd

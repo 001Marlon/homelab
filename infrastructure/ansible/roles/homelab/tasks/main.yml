@@ -7,10 +7,6 @@
     update: true
     force: true
 
-- name: Load homelab secrets
-  ansible.builtin.set_fact:
-    secrets: "{{ lookup('file', playbook_dir + '/../../../homelab-secrets.yml') | from_yaml }}"
-
 - name: Deploy .env files for all apps
   ansible.builtin.template:
     src: env.j2

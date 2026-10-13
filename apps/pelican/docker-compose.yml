@@ -55,3 +55,24 @@ services:
       - "25565:25565"
     volumes:
       - ./lazymc/lazymc.toml:/lazymc/lazymc.toml:ro
+
+  # Backstop for lazymc: independently pings the real server for player
+  # count and force-stops it via the Panel API if it's been idle too long.
+  # lazymc has repeatedly gotten stuck internally without actually sleeping
+  # the server - see notes in lazymc/wake-server.sh and lazymc/lazymc.toml.
+  watchdog:
+    build: ./watchdog
+    container_name: pelican-watchdog
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      PELICAN_URL: ${APP_URL}
+      PELICAN_API_KEY: ${LAZYMC_API_KEY}
+      PELICAN_SERVER_UUID: ${LAZYMC_SERVER_UUID}
+      MC_HOST: host.docker.internal
+      MC_PORT: "25567"
+      IDLE_TIMEOUT: "900"
+      CHECK_INTERVAL: "60"
