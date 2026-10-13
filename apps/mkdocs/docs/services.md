@@ -15,7 +15,7 @@ Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und auto
 | Paperless-ngx | paperless.marlonslk.de | 8006 | Ja | `apps/paperless` |
 | Immich | immich.marlonslk.de | 8007 | Ja | `apps/immich` |
 | Beszel | beszel.marlonslk.de | 8009 | Ja | `apps/beszel` |
-| Jellyfin | jellyfin.marlonslk.de | 8100 | Ja | `apps/arr-stack` |
+| Jellyfin | jellyfin.marlonslk.de | 8100 | Nein (eigener Login, Zusatz-Passwort stört die Jellyfin-Apps) | `apps/arr-stack` |
 | Seerr | seerr.marlonslk.de | 8101 | Ja | `apps/arr-stack` |
 | Mediarium | mediarium.marlonslk.de | 8109 | Ja | `apps/mediarium` |
 
