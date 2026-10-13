@@ -12,6 +12,7 @@ Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und auto
 | MkDocs | docs.marlonslk.de | 8001 | Ja | `apps/mkdocs` |
 | Arcane | arcane.marlonslk.de | 8002 | Ja | `apps/arcane` |
 | Uptime Kuma | uptime.marlonslk.de | 8003 | Ja | `apps/uptime-kuma` |
+| Pelican Panel | pelican.marlonslk.de | 8005 | Nein (eigener Login, Wings braucht direkten API-Zugriff) | `apps/pelican` |
 | Paperless-ngx | paperless.marlonslk.de | 8006 | Ja | `apps/paperless` |
 | Immich | immich.marlonslk.de | 8007 | Ja | `apps/immich` |
 | Beszel | beszel.marlonslk.de | 8009 | Ja | `apps/beszel` |
