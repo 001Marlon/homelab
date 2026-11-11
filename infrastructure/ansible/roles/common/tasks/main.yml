@@ -12,3 +12,12 @@
       - git
       - gnupg
     state: present
+
+
+# Proxmox leitet die Cloud-Init-Instanz-ID aus der Konfiguration ab. Ändert sie sich (z. B. neue SSH-Keys in Terraform), würde Cloud-Init beim nächsten Boot neue SSH-Host-Keys erzeugen und Runner/known_hosts aussperren.
+- name: Keep SSH host keys when the cloud-init config changes
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-keep-ssh-host-keys.cfg
+    content: |
+      ssh_deletekeys: false
+    mode: "0644"
