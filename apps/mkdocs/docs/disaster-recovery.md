@@ -135,8 +135,9 @@ Ein einzelner Lauf erledigt alles:
 2. `docker`-Rolle: offizielles Docker-APT-Repository einrichten, Docker Engine, Docker CLI, `containerd`, Docker-Buildx-Plugin und Docker-Compose-Plugin installieren, Docker-Service aktivieren und starten
 3. `storage`-Rolle:
       - `nfs-common` installieren
-      - alle Shares aus `storage.nfs_mounts` mounten und in `/etc/fstab` eintragen (`_netdev,nofail`)
-      - Docker per systemd-Drop-in (`/etc/systemd/system/docker.service.d/wait-for-nfs.conf`) erst nach `remote-fs.target` starten, damit die Container nach einem Reboot nicht den leeren lokalen Ordner statt des Shares einbinden
+      - alle Shares aus `storage.nfs_mounts` mounten und in `/etc/fstab` eintragen (`_netdev,nofail,x-systemd.mount-timeout=180`)
+      - den lokalen Mountpoint per `chattr +i` schreibgeschützt machen, damit ohne Share nichts auf die lokale Platte geschrieben wird
+      - Docker per systemd-Drop-in (`/etc/systemd/system/docker.service.d/wait-for-nfs.conf`, `RequiresMountsFor=`) erst starten, wenn die Shares wirklich gemountet sind - sonst binden die Container nach einem Reboot den leeren lokalen Ordner statt des Shares ein. Ist TrueNAS nicht erreichbar, startet Docker bewusst gar nicht
 4. `homelab`-Rolle:
       - Repository nach `/homelab` klonen
       - `homelab-secrets.yml` von der Kontrollmaschine laden

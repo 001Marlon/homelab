@@ -13,30 +13,66 @@
   loop_control:
     label: "{{ item.path }}"
 
+# nofail: Boot hängt nicht, wenn TrueNAS fehlt. x-systemd.mount-timeout: ein
+# Mount-Versuch darf bis zu 180 s dauern - TrueNAS braucht nach einem
+# Proxmox-Neustart deutlich über eine Minute, bis NFS antwortet.
 - name: Mount NFS shares from TrueNAS (persisted in /etc/fstab)
   ansible.posix.mount:
     src: "{{ item.src }}"
     path: "{{ item.path }}"
     fstype: nfs
-    opts: "{{ item.opts | default('defaults,_netdev,nofail') }}"
+    opts: "{{ item.opts | default('defaults,_netdev,nofail,x-systemd.mount-timeout=180') }}"
     state: mounted
   loop: "{{ secrets.storage.nfs_mounts }}"
   loop_control:
     label: "{{ item.src }} -> {{ item.path }}"
 
-# Docker darf erst starten, wenn die NFS-Mounts versucht wurden - sonst binden
-# die Container nach einem Reboot den leeren lokalen Ordner statt des Shares.
+# Mountpoint unveränderlich machen (chattr +i auf den lokalen Ordner UNTER dem
+# Mount). Ist der Share nicht gemountet, schlägt jeder Schreibversuch fehl,
+# statt dass Container still auf die lokale Platte schreiben. Der Share selbst
+# bleibt beschreibbar. Gesetzt wird das Attribut über einen Bind-Mount von /,
+# damit es auch bei aktivem Mount auf den lokalen Ordner wirkt. Bricht ab, wenn
+# im lokalen Ordner noch Dateien liegen - die müssen erst aufs NAS.
+- name: Make NFS mount points immutable while unmounted
+  ansible.builtin.shell: |
+    set -eu
+    view=$(mktemp -d)
+    mount --bind / "$view"
+    trap 'umount "$view"; rmdir "$view"' EXIT
+    dir="$view{{ item.path }}"
+    if [ -n "$(ls -A "$dir")" ]; then
+      echo "Lokaler Ordner unter {{ item.path }} ist nicht leer" >&2
+      exit 1
+    fi
+    if lsattr -d "$dir" | awk '{print $1}' | grep -q i; then
+      echo unchanged
+    else
+      chattr +i "$dir"
+      echo changed
+    fi
+  register: immutable_mountpoint
+  changed_when: "'changed' in immutable_mountpoint.stdout"
+  loop: "{{ secrets.storage.nfs_mounts }}"
+  loop_control:
+    label: "{{ item.path }}"
+
+# Docker darf erst starten, wenn die NFS-Shares wirklich gemountet sind - sonst
+# binden die Container nach einem Reboot den leeren lokalen Ordner statt des
+# Shares. After=remote-fs.target allein reicht nicht: nofail-Mounts sind nicht
+# vor remote-fs.target eingereiht. RequiresMountsFor wartet auf den Mount selbst;
+# schlägt er fehl, startet Docker bewusst nicht (statt ins Leere zu schreiben).
 - name: Create Docker systemd drop-in directory
   ansible.builtin.file:
     path: /etc/systemd/system/docker.service.d
     state: directory
     mode: "0755"
 
-- name: Start Docker after remote filesystems
+- name: Start Docker only after NFS shares are mounted
   ansible.builtin.copy:
     dest: /etc/systemd/system/docker.service.d/wait-for-nfs.conf
     content: |
       [Unit]
       After=remote-fs.target
+      RequiresMountsFor={{ secrets.storage.nfs_mounts | map(attribute='path') | join(' ') }}
     mode: "0644"
   notify: Reload systemd

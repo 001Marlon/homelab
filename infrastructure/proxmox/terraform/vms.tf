@@ -49,10 +49,11 @@ resource "proxmox_virtual_environment_vm" "truenas" {
   keyboard_layout = "de"
 
   # Startet als erstes; Debian wartet up_delay Sekunden, damit die NFS-Shares
-  # bereitstehen, bevor Docker auf dem Debian-Host hochfährt
+  # bereitstehen, bevor Docker auf dem Debian-Host hochfährt. 90 s reichten
+  # nicht (TrueNAS braucht bis der NFS-Dienst antwortet deutlich länger).
   startup {
     order      = 1
-    up_delay   = 90
+    up_delay   = 180
     down_delay = 60
   }
 }
