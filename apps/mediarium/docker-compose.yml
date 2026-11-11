@@ -1,11 +1,19 @@
 # ============================================================
-# Mediarium - All-in-one-Alternative zum arr-stack
-# (Indexer, Torrent/Usenet-Download, Import, Umbenennen)
+# Mediarium - All-in-one: Indexer, Usenet/Torrent-Download,
+# Import und Umbenennen (ersetzt Sonarr/Radarr/Prowlarr/Seerr)
 #
-# Nutzt denselben TrueNAS-Mount wie der arr-stack. Ein einziges
-# /data-Volume, damit Imports per Hardlink statt Kopie laufen.
-# Eigener Download-Ordner, damit sich Mediarium und der arr-stack
-# beim Parallelbetrieb nicht in die Quere kommen.
+# Wichtig zum Verständnis der Volumes:
+# Ein einziges /data-Volume auf den TrueNAS-Mount, damit Imports
+# per Hardlink/Atomic-Move statt Kopie laufen. Filme, Serien und
+# Downloads müssen deshalb im selben Dataset liegen:
+#
+# /homelab/data/media
+# ├── movies
+# ├── tv
+# └── downloads
+#     ├── mediarium           (Mediarium Download-Ordner)
+#     └── usenet
+#         └── incomplete      (SABnzbd Temp-Ordner)
 #
 # Torrents: Das eingebaute WireGuard-VPN im UI einrichten (ProtonVPN),
 # sonst laufen Torrents über die Heim-IP. Kein Peer-Port nach außen,

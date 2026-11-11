@@ -1,0 +1,23 @@
+# ============================================================
+# SABnzbd - Usenet-Downloadclient
+#
+# Nur per VPN/LAN erreichbar (keine öffentliche Domain).
+# Gleicher /data-Mount wie Mediarium, damit Imports per
+# Hardlink/Atomic-Move statt Kopie laufen.
+# ============================================================
+
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      PUID: 3000
+      PGID: 3000
+      UMASK: "002"
+      TZ: Europe/Berlin
+    volumes:
+      - ./config:/config
+      - /homelab/data/media:/data
+    ports:
+      - "8102:8080"
+    restart: unless-stopped

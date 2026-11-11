@@ -1,14 +1,14 @@
 services:
   glance:
-    image: glanceapp/glance
+    image: glanceapp/glance:latest
     container_name: glance
     env_file:
       - .env
     volumes:
       - ./config:/app/config
+      - /homelab/data/media:/mnt/media:ro   # nur für die Speicheranzeige (server-stats)
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
     ports:
       - 8000:8080
     restart: unless-stopped
-networks: {}

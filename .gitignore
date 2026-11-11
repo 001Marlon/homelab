@@ -31,3 +31,49 @@ vault_pass.txt
 *.vault_pass
 .ansible/
 *.log
+
+# ============================================================
+# App-Ordner: Allowlist statt Blocklist
+#
+# Dieses Repo ist öffentlich. Unter apps/ wird deshalb ALLES
+# ignoriert (Datenbanken, Medien, Uploads, App-Configs mit
+# API-Keys, ...) und nur explizit freigegeben, was beschreibt,
+# WIE eine App läuft. Neue App mit Zusatzdateien? Hier eine
+# "!"-Zeile ergänzen - niemals Daten-Ordner freigeben.
+# ============================================================
+
+/apps/*/*
+!/apps/*/docker-compose.yml
+
+# Glance: Dashboard-Definition (Secrets nur per ${VAR} aus .env)
+!/apps/glance/config/
+
+# MkDocs: Doku-Quellen
+!/apps/mkdocs/mkdocs.yml
+!/apps/mkdocs/docs/
+
+# Pelican: selbst gebaute Images + PHP-Upload-Limit
+!/apps/pelican/lazymc/
+!/apps/pelican/watchdog/
+!/apps/pelican/panel/
+/apps/pelican/panel/*
+!/apps/pelican/panel/uploads.ini
+
+# Host-Datenverzeichnis (/homelab/data, z. B. NFS-Mount der Medien)
+/data/
+
+# Sicherheitsnetz: auch in freigegebenen Ordnern nie committen
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.key
+*.pem
+*.crt
+*.p12
+id_rsa*
+id_ed25519*
+*.bak
+*.tgz
+*.tar.gz
+__pycache__/

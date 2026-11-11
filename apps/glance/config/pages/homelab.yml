@@ -1,0 +1,165 @@
+# Prinzip: "url" = öffentliche Domain (Klick), "check-url" = lokale Adresse (Ping).
+# Dadurch braucht der Statuscheck keinen NetBird-Bypass-Token mehr.
+
+- name: Homelab
+  slug: homelab
+  width: wide
+
+  columns:
+    # ───────────────────────── links: System ─────────────────────────
+    - size: small
+      widgets:
+        - type: server-stats
+          title: debian01
+          servers:
+            - type: local
+              name: debian01
+              hide-mountpoints-by-default: true
+              mountpoints:
+                "/":
+                  name: System
+                  hide: false
+                "/mnt/media":
+                  name: Medien (TrueNAS)
+                  hide: false
+
+        - type: monitor
+          title: Infrastruktur
+          style: compact
+          cache: 1m
+          sites:
+            - title: Proxmox
+              url: https://192.168.178.200:8006
+              allow-insecure: true
+              icon: sh:proxmox
+            - title: TrueNAS
+              url: http://192.168.178.201
+              icon: di:truenas-scale
+            - title: FRITZ!Box
+              url: http://192.168.178.1
+              icon: mdi:router-wireless
+            - title: Arcane
+              url: https://arcane.marlonslk.de
+              check-url: http://${HOST}:8002
+              icon: sh:arcane
+            - title: Beszel
+              url: https://beszel.marlonslk.de
+              check-url: http://${HOST}:8009/api/health
+              icon: sh:beszel
+            - title: Uptime Kuma
+              url: https://uptime.marlonslk.de
+              check-url: http://${HOST}:8003
+              icon: sh:uptime-kuma
+
+    # ───────────────────────── Mitte: Dienste ─────────────────────────
+    - size: full
+      widgets:
+        - type: monitor
+          title: Medien
+          cache: 1m
+          sites:
+            - title: Jellyfin
+              url: https://jellyfin.marlonslk.de
+              check-url: http://${HOST}:8100/health
+              icon: sh:jellyfin
+            - title: Mediarium
+              url: https://mediarium.marlonslk.de
+              check-url: http://${HOST}:8109
+              icon: mdi:movie-search-outline
+            - title: SABnzbd
+              url: http://${HOST}:8102
+              icon: sh:sabnzbd
+
+        - type: monitor
+          title: Fotos, Dokumente & Gaming
+          cache: 1m
+          sites:
+            - title: Immich
+              url: https://immich.marlonslk.de
+              check-url: http://${HOST}:8007/api/server/ping
+              icon: sh:immich
+            - title: Paperless
+              url: https://paperless.marlonslk.de
+              check-url: http://${HOST}:8006
+              icon: sh:paperless-ngx
+            - title: Pelican
+              url: https://pelican.marlonslk.de
+              check-url: http://${HOST}:8005
+              icon: sh:pelican-panel
+
+        - type: custom-api
+          title: SABnzbd
+          title-url: http://${HOST}:8102
+          cache: 1m
+          url: http://${HOST}:8102/api
+          parameters:
+            mode: queue
+            output: json
+            limit: "5"
+            apikey: ${SABNZBD_API_KEY}
+          template: |
+            {{ $slots := .JSON.Array "queue.slots" }}
+            <div class="flex justify-between text-center">
+              <div><div class="color-highlight size-h3">{{ .JSON.String "queue.speed" }}B/s</div><div class="size-h6">Speed</div></div>
+              <div><div class="color-highlight size-h3">{{ .JSON.Int "queue.noofslots_total" }}</div><div class="size-h6">In Queue</div></div>
+              <div><div class="color-highlight size-h3">{{ .JSON.String "queue.diskspace1_norm" }}</div><div class="size-h6">Frei</div></div>
+            </div>
+            {{ if eq (len $slots) 0 }}
+              <p class="color-subdue margin-top-15">Warteschlange leer – alles geladen.</p>
+            {{ else }}
+              <ul class="list list-gap-14 margin-top-15">
+              {{ range $slots }}
+                <li>
+                  <div class="flex justify-between gap-10">
+                    <span class="color-highlight text-truncate">{{ .String "filename" }}</span>
+                    <span class="size-h6 shrink-0">{{ .String "percentage" }}% · {{ .String "timeleft" }}</span>
+                  </div>
+                  
+                </li>
+              {{ end }}
+              </ul>
+            {{ end }}
+
+    # ───────────────────────── rechts: Zahlen ─────────────────────────
+    - size: small
+      widgets:
+        - type: custom-api
+          title: Jellyfin
+          title-url: https://jellyfin.marlonslk.de
+          cache: 1h
+          template: |
+            {{ $r := newRequest "http://${HOST}:8100/Items/Counts" | withHeader "X-Emby-Token" "${JELLYFIN_API_KEY}" | getResponse }}
+            {{ if eq $r.Response.StatusCode 200 }}
+            <div class="flex justify-between text-center">
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "MovieCount" | formatNumber }}</div><div class="size-h6">Filme</div></div>
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "SeriesCount" | formatNumber }}</div><div class="size-h6">Serien</div></div>
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "EpisodeCount" | formatApproxNumber }}</div><div class="size-h6">Folgen</div></div>
+            </div>
+            {{ else }}<p class="color-subdue">API-Key fehlt: <code>JELLYFIN_API_KEY</code></p>{{ end }}
+
+        - type: custom-api
+          title: Immich
+          title-url: https://immich.marlonslk.de
+          cache: 1h
+          template: |
+            {{ $r := newRequest "http://${HOST}:8007/api/server/statistics" | withHeader "x-api-key" "${IMMICH_API_KEY}" | getResponse }}
+            {{ if eq $r.Response.StatusCode 200 }}
+            <div class="flex justify-between text-center">
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "photos" | formatApproxNumber }}</div><div class="size-h6">Fotos</div></div>
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "videos" | formatApproxNumber }}</div><div class="size-h6">Videos</div></div>
+              <div><div class="color-highlight size-h3">{{ div ($r.JSON.Int "usage" | toFloat) 1073741824 | toInt }}GB</div><div class="size-h6">Speicher</div></div>
+            </div>
+            {{ else }}<p class="color-subdue">API-Key fehlt: <code>IMMICH_API_KEY</code></p>{{ end }}
+
+        - type: custom-api
+          title: Paperless
+          title-url: https://paperless.marlonslk.de
+          cache: 1h
+          template: |
+            {{ $r := newRequest "http://${HOST}:8006/api/statistics/" | withHeader "Authorization" "Token ${PAPERLESS_KEY}" | getResponse }}
+            {{ if eq $r.Response.StatusCode 200 }}
+            <div class="flex justify-between text-center">
+              <div><div class="color-highlight size-h3">{{ $r.JSON.Int "documents_total" | formatNumber }}</div><div class="size-h6">Dokumente</div></div>
+              <div><div class="size-h3 {{ if gt ($r.JSON.Int "documents_inbox") 0 }}color-negative{{ else }}color-highlight{{ end }}">{{ $r.JSON.Int "documents_inbox" }}</div><div class="size-h6">Inbox</div></div>
+            </div>
+            {{ else }}<p class="color-subdue">API-Key fehlt: <code>PAPERLESS_KEY</code></p>{{ end }}

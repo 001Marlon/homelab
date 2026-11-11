@@ -66,8 +66,8 @@ Terraform legt nur die VM an und reicht die beiden HDDs durch - Installation, Po
     !!! note
         Ist der Pool nach einer Neuinstallation von TrueNAS noch auf den Platten vorhanden, stattdessen *Storage → Import Pool* verwenden - sonst sind die Daten weg.
 
-3. **Dataset**: `tank` auswählen → *Add Dataset*, Name `media`, Preset **SMB**. Filme, Serien und Downloads liegen bewusst im selben Dataset, sonst funktionieren die Hardlinks/Atomic-Moves des Arr-Stacks nicht (siehe `apps/arr-stack/docker-compose.yml`). Struktur darin: `movies`, `tv`, `downloads/torrents`, `downloads/usenet/incomplete`.
-4. **Gruppe und Benutzer für UID/GID 3000** (entspricht `PUID`/`PGID` des Arr-Stacks):
+3. **Dataset**: `tank` auswählen → *Add Dataset*, Name `media`, Preset **SMB**. Filme, Serien und Downloads liegen bewusst im selben Dataset, sonst funktionieren die Hardlinks/Atomic-Moves von Mediarium nicht (siehe `apps/mediarium/docker-compose.yml`). Struktur darin: `movies`, `tv`, `downloads/mediarium`, `downloads/usenet/incomplete`.
+4. **Gruppe und Benutzer für UID/GID 3000** (entspricht `PUID`/`PGID` von Mediarium, SABnzbd und Jellyfin):
       - *Credentials → Groups → Add*: Name `media`, GID `3000`
       - *Credentials → Users → Add*: z. B. `marlon`, UID `3000`, primäre Gruppe `media`, **SMB User** aktiv, Passwort setzen
       - Beim Dataset `media` unter *Permissions → Edit* Owner `marlon` / Group `media` setzen (rekursiv)
@@ -170,7 +170,7 @@ Der TrueNAS-Share muss gemountet sein und die Medien enthalten:
 ```bash
 findmnt /homelab/data/media
 ls /homelab/data/media          # movies  tv  downloads
-docker exec radarr ls /data     # dieselben Ordner im Container
+docker exec mediarium ls /data  # dieselben Ordner im Container
 ```
 
 Einzelne Rollen lassen sich per Tag gezielt ausführen, z. B. nur den Storage-Teil:

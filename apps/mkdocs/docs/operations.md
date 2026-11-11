@@ -97,5 +97,6 @@ Diese Pfade zuerst sichern:
 
 - `/homelab/apps/immich`
 - `/homelab/apps/paperless`
-- `/homelab/apps/arr-stack/config`
+- `/homelab/apps/mediarium/config`
+- `/homelab/apps/jellyfin/config`
 - `homelab-secrets.yml` (nur außerhalb des Repos, z. B. Passwort-Manager)

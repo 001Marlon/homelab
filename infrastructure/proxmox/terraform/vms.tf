@@ -70,7 +70,7 @@ resource "proxmox_virtual_environment_vm" "debian" {
   stop_on_destroy = true
   keyboard_layout = "de"
 
-  # Erst nach TrueNAS starten (NFS-Mount für den Arr-Stack), beim Herunterfahren
+  # Erst nach TrueNAS starten (NFS-Mount für den Medien-Stack), beim Herunterfahren
   # zuerst stoppen
   startup {
     order = 2

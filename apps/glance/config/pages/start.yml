@@ -1,0 +1,108 @@
+- name: Start
+  slug: home
+  width: default
+
+  head-widgets:
+    - type: search
+      hide-header: true
+      search-engine: google
+      autofocus: true
+      new-tab: false
+      placeholder: Suchen oder !bang …
+      bangs:
+        - { title: YouTube,   shortcut: "!yt", url: "https://www.youtube.com/results?search_query={QUERY}" }
+        - { title: Twitch,    shortcut: "!tw", url: "https://www.twitch.tv/search?term={QUERY}" }
+        - { title: GitHub,    shortcut: "!gh", url: "https://github.com/search?q={QUERY}" }
+        - { title: Amazon,    shortcut: "!a",  url: "https://www.amazon.de/s?k={QUERY}" }
+        - { title: Reddit,    shortcut: "!r",  url: "https://www.reddit.com/search/?q={QUERY}" }
+        - { title: Wikipedia, shortcut: "!w",  url: "https://de.wikipedia.org/w/index.php?search={QUERY}" }
+        - { title: Maps,      shortcut: "!m",  url: "https://www.google.com/maps/search/{QUERY}" }
+        - { title: DeepL,     shortcut: "!dl", url: "https://www.deepl.com/translator#en/de/{QUERY}" }
+        - { title: Jellyfin,  shortcut: "!jf", url: "https://jellyfin.marlonslk.de/web/#/search.html?query={QUERY}" }
+
+  columns:
+    - size: small
+      widgets:
+        - type: calendar
+          hide-header: true
+          first-day-of-week: monday
+        - type: to-do
+          title: Notizen
+          id: start
+
+    - size: full
+      widgets:
+        - type: split-column
+          max-columns: 3
+          widgets:
+            - type: bookmarks
+              title: Streaming
+              groups:
+                - links:
+                    - { title: YouTube,     url: "https://www.youtube.com/",         icon: "di:youtube" }
+                    - { title: Twitch,      url: "https://www.twitch.tv/",           icon: "di:twitch" }
+                    - { title: Netflix,     url: "https://www.netflix.com/",         icon: "di:netflix" }
+                    - { title: Prime Video, url: "https://www.primevideo.com/",      icon: "di:prime-video" }
+                    - { title: Disney+,     url: "https://www.disneyplus.com/",      icon: "di:disney-plus" }
+                    - { title: Crunchyroll, url: "https://www.crunchyroll.com/",     icon: "di:crunchyroll" }
+                    - { title: Spotify,     url: "https://open.spotify.com/",        icon: "di:spotify" }
+
+            - type: bookmarks
+              title: Social
+              groups:
+                - color: 265 60 72
+                  links:
+                    - { title: Reddit,    url: "https://www.reddit.com/",       icon: "di:reddit" }
+                    - { title: Instagram, url: "https://www.instagram.com/",    icon: "di:instagram" }
+                    - { title: X,         url: "https://x.com/",                icon: "di:x-light" }
+                    - { title: Discord,   url: "https://discord.com/app",       icon: "di:discord" }
+                    - { title: WhatsApp,  url: "https://web.whatsapp.com/",     icon: "di:whatsapp" }
+
+            - type: bookmarks
+              title: Alltag
+              groups:
+                - color: 210 70 68
+                  links:
+                    - { title: Gmail,       url: "https://mail.google.com/",      icon: "di:gmail" }
+                    - { title: Drive,       url: "https://drive.google.com/",     icon: "di:google-drive" }
+                    - { title: Kalender,    url: "https://calendar.google.com/",  icon: "di:google-calendar" }
+                    - { title: Maps,        url: "https://maps.google.com/",      icon: "di:google-maps" }
+                    - { title: DeepL,       url: "https://www.deepl.com/translator", icon: "di:deepl" }
+
+            - type: bookmarks
+              title: KI & Dev
+              groups:
+                - color: 25 80 65
+                  links:
+                    - { title: Claude,    url: "https://claude.ai/",            icon: "di:claude-ai" }
+                    - { title: ChatGPT,   url: "https://chatgpt.com/",          icon: "di:openai-light" }
+                    - { title: GitHub,    url: "https://github.com/",           icon: "di:github-light" }
+                    - { title: Wikipedia, url: "https://de.wikipedia.org/",     icon: "di:wikipedia-light" }
+
+            - type: bookmarks
+              title: Shopping
+              groups:
+                - color: 40 85 65
+                  links:
+                    - { title: Amazon,        url: "https://www.amazon.de/",        icon: "di:amazon-light" }
+                    - { title: eBay,          url: "https://www.ebay.de/",          icon: "di:ebay" }
+                    - { title: Kleinanzeigen, url: "https://www.kleinanzeigen.de/", icon: "di:kleinanzeigen.png" }
+                    - { title: PayPal,        url: "https://www.paypal.com/de/",    icon: "di:paypal" }
+
+            - type: bookmarks
+              title: Gaming
+              groups:
+                - color: 340 70 68
+                  links:
+                    - { title: Steam,      url: "https://store.steampowered.com/", icon: "di:steam" }
+                    - { title: Epic Games, url: "https://store.epicgames.com/de/", icon: "di:epic-games-light" }
+                    - { title: Minecraft-Server, url: "https://pelican.marlonslk.de/", icon: "sh:pelican-panel" }
+
+            - type: bookmarks
+              title: News
+              groups:
+                - color: 0 0 70
+                  links:
+                    - { title: Tagesschau, url: "https://www.tagesschau.de/", icon: "https://icons.duckduckgo.com/ip3/tagesschau.de.ico" }
+                    - { title: Spiegel,    url: "https://www.spiegel.de/",    icon: "https://icons.duckduckgo.com/ip3/spiegel.de.ico" }
+                    - { title: heise,      url: "https://www.heise.de/",      icon: "https://icons.duckduckgo.com/ip3/heise.de.ico" }

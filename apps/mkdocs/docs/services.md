@@ -16,8 +16,7 @@ Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und auto
 | Paperless-ngx | paperless.marlonslk.de | 8006 | Ja | `apps/paperless` |
 | Immich | immich.marlonslk.de | 8007 | Ja | `apps/immich` |
 | Beszel | beszel.marlonslk.de | 8009 | Ja | `apps/beszel` |
-| Jellyfin | jellyfin.marlonslk.de | 8100 | Nein (eigener Login, Zusatz-Passwort stört die Jellyfin-Apps) | `apps/arr-stack` |
-| Seerr | seerr.marlonslk.de | 8101 | Ja | `apps/arr-stack` |
+| Jellyfin | jellyfin.marlonslk.de | 8100 | Nein (eigener Login, Zusatz-Passwort stört die Jellyfin-Apps) | `apps/jellyfin` |
 | Mediarium | mediarium.marlonslk.de | 8109 | Ja | `apps/mediarium` |
 
 !!! warning
@@ -31,12 +30,7 @@ Bewusst nicht öffentlich, da Admin-Oberflächen bzw. Downloadclients ohne eigen
 
 | App | Host-Port | Ordner |
 | --- | --- | --- |
-| SABnzbd | 8102 | `apps/arr-stack` |
-| qBittorrent | 8103 (über Gluetun) | `apps/arr-stack` |
-| Prowlarr | 8105 (über Gluetun) | `apps/arr-stack` |
-| Radarr | 8106 | `apps/arr-stack` |
-| Sonarr | 8107 | `apps/arr-stack` |
-| FlareSolverr | 8108 (intern, kein UI) | `apps/arr-stack` |
+| SABnzbd | 8102 | `apps/sabnzbd` |
 
 ## Infrastruktur
 

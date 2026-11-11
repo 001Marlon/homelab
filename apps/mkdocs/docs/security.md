@@ -20,13 +20,13 @@ Faustregel für neue Compose-Files: alles Nicht-Geheime (Zeitzone, Pfade, Ports,
 | --- | --- |
 | `netbird_reverse_proxy` | API-Zugang zum NetBird-Server, Referenz auf den Docker-Host-Peer, das gemeinsame Reverse-Proxy-Passwort, die Liste der öffentlichen Services (siehe [Runbook](operations.md)) |
 | `terraform` | SSH-Public-Keys, Proxmox-Zugangsdaten, sowie je ein Werte-Satz für die TrueNAS- und die Debian-VM (VM-ID, Name, IP, Image) |
-| `apps.<name>` | Secrets/Config je App, ein Block pro Ordner unter `apps/`. Key muss exakt dem Ordnernamen entsprechen (z. B. `arr-stack` für `apps/arr-stack`) |
+| `apps.<name>` | Secrets/Config je App, ein Block pro Ordner unter `apps/`. Key muss exakt dem Ordnernamen entsprechen (z. B. `glance` für `apps/glance`) |
 
 Innerhalb von `apps.<name>` steht optionalen, noch nicht eingerichteten Integrationen (z. B. ein API-Key für ein Widget, das noch nicht konfiguriert ist) der Wert `null` - das rendert als leere, aber vorhandene Umgebungsvariable statt eines Fehlers.
 
 ## Öffentliche vs. interne Erreichbarkeit
 
-Nur Apps ohne sensible Admin- oder Download-Oberfläche bekommen eine öffentliche Domain (siehe [Services](services.md)). Download-Clients und *arr-Admin-Panels (qBittorrent, SABnzbd, Prowlarr, Sonarr, Radarr) bleiben bewusst nur per VPN/LAN erreichbar - das sind übliche Angriffsziele, wenn sie ohne Zusatz-Auth im Internet stehen.
+Nur Apps ohne sensible Admin- oder Download-Oberfläche bekommen eine öffentliche Domain (siehe [Services](services.md)). Download-Clients wie SABnzbd bleiben bewusst nur per VPN/LAN erreichbar - das sind übliche Angriffsziele, wenn sie ohne Zusatz-Auth im Internet stehen. Einzige Ausnahme ist Mediarium, das immer hinter dem Zusatz-Passwort liegt (siehe [Services](services.md)).
 
 ## Reverse-Proxy-Schutz
 
