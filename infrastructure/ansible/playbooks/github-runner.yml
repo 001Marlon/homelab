@@ -97,7 +97,7 @@
         name: "{{ runner_user }}"
         generate_ssh_key: true
         ssh_key_type: ed25519
-        ssh_key_comment: github-runner@homelab-runner01
+        ssh_key_comment: github-actions-homelab-runner01
       register: runner_ssh_key
 
     - name: Trust host key of the Debian host
@@ -193,4 +193,4 @@
       ansible.posix.authorized_key:
         user: root
         key: "{{ hostvars['homelab-runner'].runner_ssh_key.ssh_public_key }}"
-        comment: github-runner@homelab-runner01
+        comment: github-actions-homelab-runner01

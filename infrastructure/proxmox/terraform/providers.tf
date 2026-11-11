@@ -7,9 +7,10 @@ terraform {
   }
 }
 
+# API-Token terraform@pve!github-actions-homelab-runner01 (Rolle TerraformRole),
+# kein root-Passwort. Nur der Bootstrap (Runner-LXC) braucht root@pam.
 provider "proxmox" {
   endpoint  = var.proxmox_endpoint
-  username  = var.proxmox_username
-  password  = var.proxmox_password
-  insecure = true
+  api_token = var.proxmox_api_token
+  insecure  = true
 }

@@ -33,6 +33,17 @@ cp homelab-secrets.yml.example homelab-secrets.yml
 
 `homelab-secrets.yml` öffnen und sämtliche Platzhalter mit echten Werten befüllen - SSH-Keys, Proxmox-Zugangsdaten, App-Secrets, NetBird-API-Token. Details zur Struktur: [Sicherheit](security.md).
 
+Terraform arbeitet mit einem eingeschränkten API-Token statt mit `root@pam`. Auf einer frischen Proxmox-Installation User, Rolle und Token einmalig anlegen (auf dem Proxmox-Host):
+
+```bash
+pveum role add TerraformRole -privs "Datastore.Allocate,Datastore.AllocateSpace,Datastore.AllocateTemplate,Datastore.Audit,Pool.Allocate,SDN.Use,Sys.AccessNetwork,Sys.Audit,Sys.Console,Sys.Modify,VM.Allocate,VM.Audit,VM.Clone,VM.Config.CDROM,VM.Config.CPU,VM.Config.Cloudinit,VM.Config.Disk,VM.Config.HWType,VM.Config.Memory,VM.Config.Network,VM.Config.Options,VM.Migrate,VM.PowerMgmt,VM.Snapshot"
+pveum user add terraform@pve
+pveum aclmod / -user terraform@pve -role TerraformRole
+pveum user token add terraform@pve github-actions-homelab-runner01 --privsep 0   --comment "GitHub Actions Runner homelab-runner01 (Terraform-Pipeline)"
+```
+
+Die ausgegebene `full-tokenid` und `value` als `proxmox_api_token: "<full-tokenid>=<value>"` in `homelab-secrets.yml` eintragen.
+
 Daraus die `terraform.tfvars` rendern:
 
 ```bash
@@ -207,7 +218,7 @@ Erst wenn Proxmox und der Docker-Host wieder laufen. Damit Pushes wieder automat
 # 1. LXC anlegen (State: terraform/bootstrap.tfstate im Secrets-Repo)
 cd infrastructure/bootstrap/terraform
 cp ../../../../private-homelab-secrets/terraform/bootstrap.tfstate terraform.tfstate
-terraform init && terraform apply
+terraform init && terraform apply   # fragt das root-Passwort von Proxmox ab
 cp terraform.tfstate ../../../../private-homelab-secrets/terraform/bootstrap.tfstate
 
 # 2. Runner installieren und registrieren. Token (1 h gültig) im privaten Repo:

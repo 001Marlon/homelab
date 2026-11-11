@@ -4,8 +4,9 @@
 # alles AUSSER dem Runner, auf dem sie selbst läuft. Dieser Teil wird nur von
 # Hand angewendet (siehe Doku: Disaster Recovery -> Runner neu aufsetzen).
 #
-# Zugangsdaten kommen direkt aus homelab-secrets.yml (Repo-Root, gitignored),
-# der State liegt im privaten Secrets-Repo unter terraform/bootstrap.tfstate.
+# Einstellungen kommen aus homelab-secrets.yml (Repo-Root, gitignored), das
+# root-Passwort wird abgefragt. Der State liegt im privaten Secrets-Repo unter
+# terraform/bootstrap.tfstate.
 
 terraform {
   required_providers {
@@ -21,6 +22,13 @@ variable "secrets_file" {
   default = "../../../homelab-secrets.yml"
 }
 
+# Wird beim Ausführen abgefragt (oder per TF_VAR_proxmox_root_password) und
+# liegt bewusst nirgends im Repo.
+variable "proxmox_root_password" {
+  type      = string
+  sensitive = true
+}
+
 locals {
   tf = yamldecode(file(var.secrets_file)).terraform
 
@@ -33,9 +41,10 @@ locals {
 
 provider "proxmox" {
   endpoint = local.tf.proxmox_endpoint
-  # root@pam ist nötig: das LXC-Feature "nesting" darf nur root setzen
-  username = local.tf.proxmox_username
-  password = local.tf.proxmox_password
+  # root@pam ist nötig: das LXC-Feature "nesting" darf nur root setzen. Die
+  # Pipeline selbst nutzt nur den API-Token (Rolle TerraformRole).
+  username = "root@pam"
+  password = var.proxmox_root_password
   insecure = true
 }
 

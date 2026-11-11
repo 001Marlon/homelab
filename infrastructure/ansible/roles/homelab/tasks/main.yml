@@ -25,9 +25,9 @@
     recurse: true
   register: compose_files
 
-# Neue Images nur auf ausdrücklichen Wunsch (wöchentlicher Pipeline-Job oder
-# -e homelab_pull_images=true). Ein normaler Deploy startet nur neu, was sich
-# an Compose-Dateien oder .env geändert hat.
+# Neue Images mit -e homelab_pull_images=true (macht die Pipeline bei jedem
+# Deploy). Ohne den Schalter startet nur neu, was sich an Compose-Dateien oder
+# .env geändert hat.
 - name: Pull newer images for all docker compose stacks
   ansible.builtin.command:
     cmd: docker compose pull --quiet --ignore-buildable

@@ -14,12 +14,13 @@ Push auf main (homelab)         Push auf main (private-homelab-secrets)
                      "Deploy" auf homelab-runner01 (im Heimnetz)
                        1. Ansible docker-host.yml
                           /homelab aktualisieren, .env rendern,
-                          docker compose up -d (ohne neue Images)
+                          neue Images ziehen, docker compose up -d
                        2. Ansible sync-reverse-proxy.yml
                        3. terraform plan → Ergebnis in der Job-Zusammenfassung
 
 Per Klick:    "Terraform apply"  → apply, State wird ins Secrets-Repo committet
-Sonntags:     "Update images"    → docker compose pull + up -d, alte Images löschen
+Sonntags:     "Update images"    → dasselbe ohne Push, damit :latest-Images
+                                   auch in ruhigen Wochen aktuell bleiben
 ```
 
 Alle Workflows mit Zugriff aufs Heimnetz liegen im **privaten** Repo `private-homelab-secrets` (Ordner `.github/workflows/`). Das öffentliche Repo enthält nur `trigger-deploy.yml`, das auf einem GitHub-Cloud-Runner läuft und nichts im Heimnetz ausführt. Pull Requests (auch von Forks) lösen keinen Deploy aus.
@@ -36,7 +37,9 @@ Der Apply rechnet den Plan unmittelbar vorher neu. Zwischen Ansehen und Klick so
 
 ## Image-Updates
 
-Normale Deploys ziehen keine neuen Images. Das passiert nur sonntags um 03:00 UTC über **Update images** oder sofort per **Run workflow** auf diesem Workflow.
+Jeder Deploy zieht die neuesten Images (`docker compose pull`) und startet nur die Container neu, deren Image sich geändert hat. Wer `:latest` als Tag setzt, bekommt also bei jedem Push die aktuelle Version. Danach werden nicht mehr genutzte Images gelöscht.
+
+Zusätzlich läuft **Update images** sonntags um 03:00 UTC, auch wenn in der Woche nichts gepusht wurde. Soll eine App auf einer Version bleiben, im Compose-File einen festen Tag statt `latest` setzen.
 
 ## Runner `homelab-runner01`
 
@@ -46,7 +49,8 @@ Normale Deploys ziehen keine neuen Images. Das passiert nur sonntags um 03:00 UT
 | IP | 192.168.178.203 |
 | Labels | `self-hosted`, `homelab` |
 | Software | GitHub Actions Runner (aktualisiert sich selbst), Ansible (Debian-Paket), Terraform (feste Version im Playbook) |
-| Zugang zum Debian-Host | SSH-Schlüssel des Users `runner` (Kommentar `github-runner@homelab-runner01`) in `/root/.ssh/authorized_keys` auf homelab-debian01 |
+| Zugang zum Debian-Host | SSH-Schlüssel `github-actions-homelab-runner01` (User `runner`) in `/root/.ssh/authorized_keys` auf homelab-debian01 |
+| Zugang zu Proxmox | API-Token `terraform@pve!github-actions-homelab-runner01`, Rolle `TerraformRole`, kein root |
 
 Der Runner verbindet sich ausgehend zu GitHub. Im Router muss kein Port geöffnet werden.
 
@@ -63,7 +67,7 @@ Der Runner gehört zur **Bootstrap-Schicht**. Die Pipeline verwaltet alles auße
 
 | Was | Wo |
 |---|---|
-| Alle App-Secrets, Proxmox-Zugang, Terraform-State | Privates Repo, wird pro Lauf ausgecheckt und danach aus dem Arbeitsordner gelöscht |
+| Alle App-Secrets, Proxmox-API-Token, Terraform-State | Privates Repo, wird pro Lauf ausgecheckt und danach aus dem Arbeitsordner gelöscht |
 | `HOMELAB_DISPATCH_TOKEN` | Actions-Secret im öffentlichen Repo. Fine-grained Token `homelab-deploy-dispatch`, nur `private-homelab-secrets`, nur *Contents: Read and write*. **Läuft nach einem Jahr ab** und muss dann erneuert werden. Ohne Token schlägt „Trigger deploy“ fehl. |
 
 ## Störungen
