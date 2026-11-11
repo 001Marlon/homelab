@@ -53,5 +53,6 @@ nav:
       - Services: services.md
   - Betrieb:
       - Runbook: operations.md
+      - Pipeline: pipeline.md
       - Sicherheit: security.md
   - Disaster Recovery: disaster-recovery.md

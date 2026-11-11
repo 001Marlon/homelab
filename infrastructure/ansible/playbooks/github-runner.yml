@@ -1,0 +1,196 @@
+---
+# Bootstrap: richtet den GitHub-Actions-Runner im LXC homelab-runner01 ein.
+# Wird nur von Hand ausgeführt, nie von der Pipeline selbst.
+#
+#   ansible-playbook playbooks/github-runner.yml -e github_runner_token=<TOKEN>
+#
+# Den Registrierungs-Token (1 h gültig) gibt es im privaten Repo unter
+# Settings -> Actions -> Runners -> New self-hosted runner. Ist der Runner schon
+# registriert, wird der Token nicht gebraucht.
+
+- name: Install and register GitHub Actions runner
+  hosts: homelab-runner
+  gather_facts: false
+  vars:
+    runner_user: runner
+    runner_dir: /home/runner/actions-runner
+    runner_repo_url: https://github.com/001Marlon/private-homelab-secrets
+    runner_labels: homelab
+    terraform_version: "1.13.5"
+
+  tasks:
+    - name: Ensure python3 is present (Debian standard template ships without it)
+      ansible.builtin.raw: command -v python3 || (apt-get update && apt-get install -y python3)
+      register: python_install
+      changed_when: "'Setting up' in python_install.stdout"
+
+    - name: Gather facts
+      ansible.builtin.setup:
+
+    - name: Install packages for the pipeline
+      ansible.builtin.apt:
+        name:
+          - ansible
+          - git
+          - curl
+          - jq
+          - unzip
+          - openssh-client
+          - ca-certificates
+          # become_user: runner braucht sudo, acl für Ansibles Temp-Dateien
+          - sudo
+          - acl
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Check installed Terraform version
+      ansible.builtin.command: terraform version -json
+      register: tf_installed
+      changed_when: false
+      failed_when: false
+
+    - name: Install Terraform {{ terraform_version }}
+      when: >-
+        tf_installed.rc != 0 or
+        (tf_installed.stdout | from_json).terraform_version != terraform_version
+      block:
+        - name: Download Terraform
+          ansible.builtin.get_url:
+            url: "https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_linux_amd64.zip"
+            checksum: "sha256:https://releases.hashicorp.com/terraform/{{ terraform_version }}/terraform_{{ terraform_version }}_SHA256SUMS"
+            dest: /tmp/terraform.zip
+            mode: "0644"
+
+        - name: Unpack Terraform to /usr/local/bin
+          ansible.builtin.unarchive:
+            src: /tmp/terraform.zip
+            dest: /usr/local/bin
+            remote_src: true
+            include: [terraform]
+
+    - name: Create runner user
+      ansible.builtin.user:
+        name: "{{ runner_user }}"
+        shell: /bin/bash
+        create_home: true
+
+    - name: Create Terraform provider cache directory
+      ansible.builtin.file:
+        path: "/home/{{ runner_user }}/.terraform.d/plugin-cache"
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: "0755"
+
+    - name: Cache Terraform providers between pipeline runs
+      ansible.builtin.copy:
+        dest: "/home/{{ runner_user }}/.terraformrc"
+        content: |
+          plugin_cache_dir = "/home/{{ runner_user }}/.terraform.d/plugin-cache"
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: "0644"
+
+    - name: Create SSH key for Ansible deploys (runner -> Debian host)
+      ansible.builtin.user:
+        name: "{{ runner_user }}"
+        generate_ssh_key: true
+        ssh_key_type: ed25519
+        ssh_key_comment: github-runner@homelab-runner01
+      register: runner_ssh_key
+
+    - name: Trust host key of the Debian host
+      ansible.builtin.known_hosts:
+        path: "/home/{{ runner_user }}/.ssh/known_hosts"
+        name: "{{ hostvars['homelab-debian'].ansible_host }}"
+        key: "{{ lookup('pipe', 'ssh-keyscan -t ed25519 ' ~ hostvars['homelab-debian'].ansible_host) }}"
+      become: true
+      become_user: "{{ runner_user }}"
+
+    - name: Check whether the runner is already registered
+      ansible.builtin.stat:
+        path: "{{ runner_dir }}/.runner"
+      register: runner_registered
+
+    - name: Download and register the runner
+      when: not runner_registered.stat.exists
+      block:
+        - name: Require a registration token
+          ansible.builtin.assert:
+            that: github_runner_token is defined and github_runner_token | length > 0
+            fail_msg: "Runner ist noch nicht registriert: -e github_runner_token=<TOKEN> mitgeben"
+
+        - name: Look up latest runner release
+          ansible.builtin.uri:
+            url: https://api.github.com/repos/actions/runner/releases/latest
+            return_content: true
+          register: runner_release
+
+        - name: Create runner directory
+          ansible.builtin.file:
+            path: "{{ runner_dir }}"
+            state: directory
+            owner: "{{ runner_user }}"
+            group: "{{ runner_user }}"
+            mode: "0755"
+
+        - name: Download and unpack runner
+          ansible.builtin.unarchive:
+            src: "https://github.com/actions/runner/releases/download/{{ runner_release.json.tag_name }}/actions-runner-linux-x64-{{ runner_release.json.tag_name | regex_replace('^v', '') }}.tar.gz"
+            dest: "{{ runner_dir }}"
+            remote_src: true
+            owner: "{{ runner_user }}"
+            group: "{{ runner_user }}"
+
+        - name: Install runner dependencies
+          ansible.builtin.command: ./bin/installdependencies.sh
+          args:
+            chdir: "{{ runner_dir }}"
+          changed_when: true
+
+        - name: Register runner with GitHub
+          ansible.builtin.command:
+            argv:
+              - ./config.sh
+              - --unattended
+              - --url
+              - "{{ runner_repo_url }}"
+              - --token
+              - "{{ github_runner_token }}"
+              - --name
+              - "{{ inventory_hostname }}"
+              - --labels
+              - "{{ runner_labels }}"
+              - --replace
+            chdir: "{{ runner_dir }}"
+          become: true
+          become_user: "{{ runner_user }}"
+          no_log: true
+          changed_when: true
+
+        - name: Install runner as systemd service
+          ansible.builtin.command: ./svc.sh install {{ runner_user }}
+          args:
+            chdir: "{{ runner_dir }}"
+          changed_when: true
+
+    - name: Start runner service
+      ansible.builtin.shell: ./svc.sh start && ./svc.sh status
+      args:
+        chdir: "{{ runner_dir }}"
+      register: runner_service
+      changed_when: false
+
+# Dauerhafter, bewusst eingerichteter Zugang: Der Runner deployt per Ansible als
+# root auf den Debian-Host. Läuft nur, wenn diese Maschine selbst root-SSH auf
+# den Debian-Host hat (z. B. vom Admin-PC aus).
+- name: Allow the runner to deploy to the Debian host
+  hosts: homelab-debian
+  gather_facts: false
+  tasks:
+    - name: Authorize runner SSH key
+      ansible.posix.authorized_key:
+        user: root
+        key: "{{ hostvars['homelab-runner'].runner_ssh_key.ssh_public_key }}"
+        comment: github-runner@homelab-runner01

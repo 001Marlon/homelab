@@ -12,6 +12,9 @@ docker ps -a --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
 ## App-Stand aktualisieren
 
+!!! tip "Normalfall: Pipeline"
+    Im Alltag reicht ein Push auf `main`. Die [Pipeline](pipeline.md) führt die folgenden Playbooks automatisch aus. Die Befehle hier sind für den Notfall oder für Tests.
+
 Ein einzelner Ansible-Lauf bringt Repository-Stand, Secrets und laufende Container synchron:
 
 ```bash
@@ -68,6 +71,8 @@ services:
 Danach `sync-reverse-proxy.yml` erneut ausführen - der Service bleibt bestehen, nur `password_auth` wird deaktiviert. Weglassen von `password_protected` (oder `true`) bedeutet weiterhin geschützt.
 
 ## Terraform-Änderungen anwenden
+
+Normalfall: pushen, Plan im Lauf **Deploy** ansehen, dann **Terraform apply** per Klick starten (siehe [Pipeline](pipeline.md)). Von Hand:
 
 ```bash
 cd infrastructure/ansible

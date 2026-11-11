@@ -25,6 +25,19 @@
     recurse: true
   register: compose_files
 
+# Neue Images nur auf ausdrücklichen Wunsch (wöchentlicher Pipeline-Job oder
+# -e homelab_pull_images=true). Ein normaler Deploy startet nur neu, was sich
+# an Compose-Dateien oder .env geändert hat.
+- name: Pull newer images for all docker compose stacks
+  ansible.builtin.command:
+    cmd: docker compose pull --quiet --ignore-buildable
+    chdir: "{{ item.path | dirname }}"
+  loop: "{{ compose_files.files }}"
+  loop_control:
+    label: "{{ item.path | dirname }}"
+  when: homelab_pull_images | default(false) | bool
+  changed_when: false
+
 - name: Start all docker compose stacks
   ansible.builtin.command:
     cmd: docker compose up -d
@@ -34,3 +47,9 @@
     label: "{{ item.path | dirname }}"
   register: compose_up
   changed_when: "'Container' in compose_up.stderr and ('Started' in compose_up.stderr or 'Created' in compose_up.stderr or 'Recreated' in compose_up.stderr)"
+
+- name: Remove images no longer used by any container
+  ansible.builtin.command: docker image prune -f
+  when: homelab_pull_images | default(false) | bool
+  register: image_prune
+  changed_when: "'Total reclaimed space: 0B' not in image_prune.stdout"

@@ -16,6 +16,8 @@
           Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
         return_content: true
       register: existing_services
+      # Nur lesend - auch bei --check ausführen, sonst fehlt die Liste
+      check_mode: false
 
     - name: Build domain -> id map of existing services
       ansible.builtin.set_fact:

@@ -1,0 +1,26 @@
+# Öffentliches Repo: hier läuft bewusst NICHTS im Heimnetz. Ein Push auf main
+# stößt nur den Deploy-Workflow im privaten Repo an, der auf dem eigenen Runner
+# (homelab-runner01) läuft. Pull Requests (auch von Forks) lösen nichts aus.
+
+name: Trigger deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify private deploy workflow
+        env:
+          GH_TOKEN: ${{ secrets.HOMELAB_DISPATCH_TOKEN }}
+        run: |
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/001Marlon/private-homelab-secrets/dispatches \
+            -d '{"event_type":"homelab-push"}'

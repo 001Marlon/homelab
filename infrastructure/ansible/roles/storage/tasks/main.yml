@@ -4,11 +4,12 @@
     name: nfs-common
     state: present
 
+# Kein "mode": Ist der Share gemountet, würde Ansible sonst die Rechte der
+# Freigabe auf dem NAS ändern (dort 770 für die Medien-Gruppe).
 - name: Create NFS mount points
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: directory
-    mode: "0755"
   loop: "{{ secrets.storage.nfs_mounts }}"
   loop_control:
     label: "{{ item.path }}"

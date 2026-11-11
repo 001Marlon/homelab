@@ -197,6 +197,27 @@ Legt alle in `homelab-secrets.yml` unter `netbird_reverse_proxy.services` gelist
 !!! note
     Läuft der bestehende VPS mit NetBird-Server unverändert weiter, ist dieser Schritt meist nicht nötig - die Services zeigen bereits auf die richtige Peer-IP, sobald sich der Docker-Host neu mit dem Mesh verbindet.
 
+## 13. Pipeline-Runner neu aufsetzen
+
+Erst wenn Proxmox und der Docker-Host wieder laufen. Damit Pushes wieder automatisch deployt werden, braucht es den Runner-LXC. Er ist bewusst nicht Teil der Pipeline (siehe [Pipeline](pipeline.md)).
+
+### Runner neu aufsetzen
+
+```bash
+# 1. LXC anlegen (State: terraform/bootstrap.tfstate im Secrets-Repo)
+cd infrastructure/bootstrap/terraform
+cp ../../../../private-homelab-secrets/terraform/bootstrap.tfstate terraform.tfstate
+terraform init && terraform apply
+cp terraform.tfstate ../../../../private-homelab-secrets/terraform/bootstrap.tfstate
+
+# 2. Runner installieren und registrieren. Token (1 h gültig) im privaten Repo:
+#    Settings -> Actions -> Runners -> New self-hosted runner
+cd ../../ansible
+ansible-playbook playbooks/github-runner.yml -e github_runner_token=<TOKEN>
+```
+
+Das Playbook richtet den Runner ein und trägt seinen Deploy-Schlüssel auf dem Debian-Host ein. Danach den neuen State im Secrets-Repo committen.
+
 ## Kurzfassung
 
 ```text
@@ -217,6 +238,8 @@ Ansible konfiguriert den Docker-Host und mountet den NFS-Share
 Ansible rendert Secrets und startet alle Apps
         ↓
 NetBird-Reverse-Proxy-Services synchronisieren
+        ↓
+Pipeline-Runner aufsetzen (Bootstrap)
         ↓
 Homelab ist wiederhergestellt
 ```
