@@ -9,7 +9,7 @@ Push auf main (homelab)         Push auf main (private-homelab-secrets)
         │                                   │
         ▼                                   │
 "Trigger deploy" (GitHub-Cloud)             │
-  stößt per repository_dispatch an ─────────┤
+  startet "Deploy" (workflow_dispatch) ─────┤
                                             ▼
                      "Deploy" auf homelab-runner01 (im Heimnetz)
                        1. Ansible docker-host.yml
@@ -68,7 +68,7 @@ Der Runner gehört zur **Bootstrap-Schicht**. Die Pipeline verwaltet alles auße
 | Was | Wo |
 |---|---|
 | Alle App-Secrets, Proxmox-API-Token, Terraform-State | Privates Repo, wird pro Lauf ausgecheckt und danach aus dem Arbeitsordner gelöscht |
-| `HOMELAB_DISPATCH_TOKEN` | Actions-Secret im öffentlichen Repo. Fine-grained Token `homelab-deploy-dispatch`, nur `private-homelab-secrets`, nur *Contents: Read and write*. **Läuft nach einem Jahr ab** und muss dann erneuert werden. Ohne Token schlägt „Trigger deploy“ fehl. |
+| `HOMELAB_DISPATCH_TOKEN` | Actions-Secret im öffentlichen Repo. Fine-grained Token `homelab-deploy-dispatch`, nur `private-homelab-secrets`, nur *Actions: Read and write*. Er kann Workflows starten, aber keinen Code ändern. **Läuft nach einem Jahr ab** und muss dann erneuert werden. Ohne Token schlägt „Trigger deploy“ fehl. |
 
 ## Störungen
 
