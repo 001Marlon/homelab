@@ -128,14 +128,14 @@
           title-url: https://jellyfin.marlonslk.de
           cache: 1h
           template: |
-            {{ $r := newRequest "http://${HOST}:8100/Items/Counts" | withHeader "X-Emby-Token" "${JELLYFIN_API_KEY}" | getResponse }}
+            {{ $r := newRequest "http://${HOST}:8100/Items/Counts" | withHeader "Authorization" "MediaBrowser Token=\"${JELLYFIN_API_KEY}\"" | getResponse }}
             {{ if eq $r.Response.StatusCode 200 }}
             <div class="flex justify-between text-center">
               <div><div class="color-highlight size-h3">{{ $r.JSON.Int "MovieCount" | formatNumber }}</div><div class="size-h6">Filme</div></div>
               <div><div class="color-highlight size-h3">{{ $r.JSON.Int "SeriesCount" | formatNumber }}</div><div class="size-h6">Serien</div></div>
               <div><div class="color-highlight size-h3">{{ $r.JSON.Int "EpisodeCount" | formatApproxNumber }}</div><div class="size-h6">Folgen</div></div>
             </div>
-            {{ else }}<p class="color-subdue">API-Key fehlt: <code>JELLYFIN_API_KEY</code></p>{{ end }}
+            {{ else }}<p class="color-subdue">Jellyfin antwortet mit HTTP {{ $r.Response.StatusCode }} – <code>JELLYFIN_API_KEY</code> prüfen</p>{{ end }}
 
         - type: custom-api
           title: Immich
