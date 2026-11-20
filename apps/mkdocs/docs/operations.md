@@ -57,6 +57,11 @@ ansible-playbook playbooks/sync-reverse-proxy.yml
 
 Das legt fehlende Services an, bringt bestehende auf den deklarierten Stand (Ziel, Port, Passwort) und **entfernt Services, deren Eintrag aus der Liste gelöscht wurde**. Ein Eintrag entfernen und den Playbook-Lauf wiederholen macht eine App wieder VPN-only.
 
+Bestehende Services werden nur aktualisiert, wenn sie vom deklarierten Stand abweichen (Modus, Ports, Ziel, Passwortschutz an/aus). Jedes Update baut beim Proxy die TCP-/UDP-Listener neu auf, was laufende Spiel-Verbindungen (Minecraft, Factorio) trennt, und stellt für HTTP-Services ein neues TLS-Zertifikat aus. Ein Deploy ohne Änderung lässt die Services deshalb in Ruhe.
+
+!!! note
+    Das gemeinsame Passwort (`shared_password`) kann nicht verglichen werden. Nach einer Änderung einmal mit `-e force_update=true` ausführen, dann werden alle bestehenden Services neu geschrieben.
+
 ### Einzelnen Service vom Passwortschutz ausnehmen
 
 Das gemeinsame Zusatz-Passwort ist standardmäßig für jeden Eintrag aktiv. Um eine bestimmte App davon auszunehmen (öffentlich erreichbar, aber ohne den zusätzlichen Passwort-Prompt), beim jeweiligen Eintrag `password_protected: false` ergänzen:
