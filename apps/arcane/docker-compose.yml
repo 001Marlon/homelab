@@ -10,9 +10,9 @@ services:
       # Optional host project mount:
       # - /path/to/projects:/app/data/projects
     environment:
-      - APP_URL=https://arcane.marlonslk.de
+      # Arcane reads only ARCANE_-prefixed vars now; JWT_SECRET is retired
+      - ARCANE_APP_URL=https://arcane.marlonslk.de
       - PUID=1000
       - PGID=1000
-      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
-      - JWT_SECRET=${JWT_SECRET}
+      - ARCANE_ENCRYPTION_KEY=${ENCRYPTION_KEY}
     restart: unless-stopped
