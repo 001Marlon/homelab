@@ -1,8 +1,69 @@
 ---
+# Bringt die NetBird-Reverse-Proxy-Services auf den Stand von
+# homelab-secrets.yml: fehlende anlegen, abweichende aktualisieren, nicht mehr
+# gelistete löschen.
+#
+# Bestehende Services werden nur angefasst, wenn sie sich wirklich vom
+# deklarierten Stand unterscheiden. Jedes PUT baut beim Proxy die TCP-/UDP-
+# Listener neu auf (laufende Spiel-Verbindungen brechen ab) und stellt für
+# HTTP-Services ein neues TLS-Zertifikat aus (Let's-Encrypt-Rate-Limits).
+#
+# Das gemeinsame Passwort liefert die API nicht vergleichbar zurück. Nach einer
+# Änderung von shared_password deshalb einmal mit -e force_update=true laufen
+# lassen, dann werden alle bestehenden Services neu geschrieben.
 - name: Sync NetBird reverse proxy services
   hosts: localhost
   connection: local
   gather_facts: false
+
+  vars:
+    force_update: false
+    np: "{{ secrets.netbird_reverse_proxy }}"
+    # Wunschzustand eines Service-Eintrags als JSON-Body für die API
+    service_mode: "{{ item.mode | default('http') }}"
+    base_body:
+      name: "{{ item.domain }}"
+      domain: "{{ item.domain }}"
+      mode: "{{ service_mode }}"
+      listen_port: "{{ item.listen_port | default(0) }}"
+      enabled: true
+      targets:
+        - target_id: "{{ np.docker_host_peer_id }}"
+          target_type: peer
+          protocol: "{{ service_mode }}"
+          host: "{{ np.docker_host_peer_ip }}"
+          port: "{{ item.port }}"
+          enabled: true
+    auth_block:
+      auth:
+        password_auth:
+          enabled: "{{ item.password_protected | default(true) }}"
+          password: "{{ np.shared_password }}"
+    service_body: "{{ base_body | combine(auth_block if service_mode == 'http' else {}) }}"
+    # Vergleichbare Kurzform von Wunsch- und Ist-Zustand (alles als String)
+    desired_fp: >-
+      {{ [service_mode,
+          item.listen_port | default(0) | int,
+          true,
+          np.docker_host_peer_id,
+          np.docker_host_peer_ip,
+          item.port | int,
+          service_mode,
+          (item.password_protected | default(true) | bool) if service_mode == 'http' else '-']
+         | join('|') }}
+    current: "{{ existing_services_by_domain[item.domain] | default({}) }}"
+    current_target: "{{ (current.targets | default([{}]))[0] }}"
+    current_fp: >-
+      {{ [current.mode | default(''),
+          current.listen_port | default(0) | int,
+          current.enabled | default(false) | bool,
+          current_target.target_id | default(''),
+          current_target.host | default(''),
+          current_target.port | default(0) | int,
+          current_target.protocol | default(''),
+          (((current.auth | default({})).password_auth | default({})).enabled | default(false) | bool)
+            if (current.mode | default('')) == 'http' else '-']
+         | join('|') }}
 
   tasks:
     - name: Load homelab secrets
@@ -11,99 +72,62 @@
 
     - name: Get existing reverse proxy services
       ansible.builtin.uri:
-        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services"
+        url: "{{ np.api_url }}/reverse-proxies/services"
         headers:
-          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+          Authorization: "Token {{ np.api_token }}"
         return_content: true
       register: existing_services
       # Nur lesend - auch bei --check ausführen, sonst fehlt die Liste
       check_mode: false
 
-    - name: Build domain -> id map of existing services
+    - name: Index existing services by domain
       ansible.builtin.set_fact:
         existing_by_domain: "{{ dict(existing_services.json | map(attribute='domain') | zip(existing_services.json | map(attribute='id'))) }}"
+        existing_services_by_domain: "{{ dict(existing_services.json | map(attribute='domain') | zip(existing_services.json)) }}"
 
     - name: Create missing reverse proxy services
       ansible.builtin.uri:
-        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services"
+        url: "{{ np.api_url }}/reverse-proxies/services"
         method: POST
         headers:
-          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+          Authorization: "Token {{ np.api_token }}"
         body_format: json
         body: "{{ service_body }}"
         status_code: [200, 201]
-      vars:
-        service_mode: "{{ item.mode | default('http') }}"
-        base_body:
-          name: "{{ item.domain }}"
-          domain: "{{ item.domain }}"
-          mode: "{{ service_mode }}"
-          listen_port: "{{ item.listen_port | default(0) }}"
-          enabled: true
-          targets:
-            - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
-              target_type: peer
-              protocol: "{{ service_mode }}"
-              host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
-              port: "{{ item.port }}"
-              enabled: true
-        auth_block:
-          auth:
-            password_auth:
-              enabled: "{{ item.password_protected | default(true) }}"
-              password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
-        service_body: "{{ base_body | combine(auth_block if service_mode == 'http' else {}) }}"
-      loop: "{{ secrets.netbird_reverse_proxy.services }}"
+      loop: "{{ np.services }}"
       loop_control:
         label: "{{ item.domain }}"
       when: item.domain not in existing_by_domain
 
-    - name: Update existing reverse proxy services (keep them in sync)
+    - name: Update reverse proxy services that differ from the declared state
       ansible.builtin.uri:
-        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services/{{ existing_by_domain[item.domain] }}"
+        url: "{{ np.api_url }}/reverse-proxies/services/{{ existing_by_domain[item.domain] }}"
         method: PUT
         headers:
-          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+          Authorization: "Token {{ np.api_token }}"
         body_format: json
         body: "{{ service_body }}"
         status_code: [200, 201]
-      vars:
-        service_mode: "{{ item.mode | default('http') }}"
-        base_body:
-          name: "{{ item.domain }}"
-          domain: "{{ item.domain }}"
-          mode: "{{ service_mode }}"
-          listen_port: "{{ item.listen_port | default(0) }}"
-          enabled: true
-          targets:
-            - target_id: "{{ secrets.netbird_reverse_proxy.docker_host_peer_id }}"
-              target_type: peer
-              protocol: "{{ service_mode }}"
-              host: "{{ secrets.netbird_reverse_proxy.docker_host_peer_ip }}"
-              port: "{{ item.port }}"
-              enabled: true
-        auth_block:
-          auth:
-            password_auth:
-              enabled: "{{ item.password_protected | default(true) }}"
-              password: "{{ secrets.netbird_reverse_proxy.shared_password }}"
-        service_body: "{{ base_body | combine(auth_block if service_mode == 'http' else {}) }}"
-      loop: "{{ secrets.netbird_reverse_proxy.services }}"
+      changed_when: true
+      loop: "{{ np.services }}"
       loop_control:
-        label: "{{ item.domain }}"
-      when: item.domain in existing_by_domain
+        label: "{{ item.domain }}: {{ current_fp | trim }} -> {{ desired_fp | trim }}"
+      when:
+        - item.domain in existing_by_domain
+        - (force_update | bool) or (desired_fp | trim) != (current_fp | trim)
 
     - name: Build list of domains no longer declared
       ansible.builtin.set_fact:
-        desired_domains: "{{ secrets.netbird_reverse_proxy.services | map(attribute='domain') | list }}"
+        desired_domains: "{{ np.services | map(attribute='domain') | list }}"
 
     - name: Remove reverse proxy services no longer in homelab-secrets.yml
       ansible.builtin.uri:
-        url: "{{ secrets.netbird_reverse_proxy.api_url }}/reverse-proxies/services/{{ item.value }}"
+        url: "{{ np.api_url }}/reverse-proxies/services/{{ item.value }}"
         method: DELETE
         headers:
-          Authorization: "Token {{ secrets.netbird_reverse_proxy.api_token }}"
+          Authorization: "Token {{ np.api_token }}"
         status_code: [200, 204]
+      changed_when: true
       loop: "{{ existing_by_domain | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
