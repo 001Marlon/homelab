@@ -24,6 +24,18 @@ Diese Apps haben einen NetBird-Reverse-Proxy-Service mit eigener Domain und auto
 
 Verwaltet über `infrastructure/ansible/playbooks/sync-reverse-proxy.yml`, gesteuert durch die `services`-Liste in `homelab-secrets.yml`.
 
+### Gameserver (Layer-4-Passthrough)
+
+Spielserver sprechen kein HTTP. Ihr Service im NetBird-Reverse-Proxy hat deshalb `mode: tcp` bzw. `mode: udp` und eine feste `listen_port` auf dem VPS. Ein Passwort-Gate gibt es hier nicht. Die Gameserver selbst laufen in Pelican.
+
+| Spiel | Domain | Protokoll | Host-Port | Hinweis |
+| --- | --- | --- | --- | --- |
+| Minecraft | mc.marlonslk.de | TCP | 25565 | Zeigt auf lazymc (Wake-on-Join), der echte Server läuft auf 25567 |
+| Factorio | factorio.marlonslk.de | UDP | 34197 | Pelican-Allocation auf `0.0.0.0:34197`, kein Auto-Start |
+
+!!! note
+    Für jeden neuen Gameserver auf dem VPS den Port im passenden Protokoll freigeben (Firewall des Hosters, ufw, Port-Zuordnung des Proxy-Containers). Die Pelican-Allocation muss auf `0.0.0.0` lauschen, weil der Proxy über die NetBird-IP des Docker-Hosts reinkommt, nicht über die LAN-IP.
+
 ## Nur per VPN/LAN erreichbar
 
 Bewusst nicht öffentlich, da Admin-Oberflächen bzw. Downloadclients ohne eigenes starkes Auth-Konzept:
